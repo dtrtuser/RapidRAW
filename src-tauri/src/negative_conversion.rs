@@ -148,6 +148,25 @@ fn run_pipeline(
             n_g = n_g.max(0.0) * params.green_weight;
             n_b = n_b.max(0.0) * params.blue_weight;
 
+            // Soft-knee highlight rolloff: compress values above knee smoothly
+            // toward 1.0 to prevent hard clipping while preserving color ratios.
+            let soft_knee = |v: f32| -> f32 {
+                const KNEE: f32 = 0.92;
+                if v <= KNEE {
+                    v
+                } else {
+                    // Smooth compression using a toe curve above the knee.
+                    // Maps [KNEE, +inf) -> [KNEE, 1.0) asymptotically.
+                    // Dividing by 2.0 makes the rolloff gentler (less aggressive compression).
+                    let t = v - KNEE;
+                    KNEE + (1.0 - KNEE) * (1.0 - (-(t / ((1.0 - KNEE) * 2.0))).exp())
+                }
+            };
+
+            let n_r = soft_knee(n_r);
+            let n_g = soft_knee(n_g);
+            let n_b = soft_knee(n_b);
+
             let apply_curve = |x: f32| -> f32 {
                 let sigmoid = 1.0 / (1.0 + (-k * (x - x0)).exp());
                 let s_norm = (sigmoid - y0) * scale;
@@ -161,8 +180,8 @@ fn run_pipeline(
             let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
             let max_ch = r.max(g).max(b);
 
-            if max_ch > 0.9 {
-                let overflow = ((max_ch - 0.9) * 10.0).clamp(0.0, 1.0);
+            if max_ch > 0.92 {
+                let overflow = ((max_ch - 0.92) * (1.0 / 0.08)).clamp(0.0, 1.0);
                 let sat_reduction = overflow * overflow;
 
                 r = r + (luma - r) * sat_reduction;
