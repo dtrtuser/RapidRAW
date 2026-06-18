@@ -43,6 +43,7 @@
         "shadows": "Tiefen"
       },
       "hue": "Farbton",
+      "localHue": "Lokaler Farbton",
       "luminance": "Luminanz",
       "mixerColors": {
         "aquas": "Aquamarin",

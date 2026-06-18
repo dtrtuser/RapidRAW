@@ -43,6 +43,7 @@
         "shadows": "Shadows"
       },
       "hue": "Hue",
+      "localHue": "Local Hue",
       "luminance": "Luminance",
       "mixerColors": {
         "aquas": "Aquas",

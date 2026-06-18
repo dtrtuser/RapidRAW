@@ -2,10 +2,10 @@
   "adjustments": {
     "basic": {
       "blacks": "黑色",
-      "contrast": "對比度",
+      "contrast": "對比",
       "evShift": "EV 偏移",
       "exposure": "曝光",
-      "highlights": "高光",
+      "highlights": "亮部",
       "mappers": {
         "agx": "AgX",
         "agxDesc": "電影感色調映射",
@@ -38,7 +38,7 @@
         "balance": "平衡",
         "blending": "混合",
         "global": "全域",
-        "highlights": "高光",
+        "highlights": "亮部",
         "midtones": "中間調",
         "shadows": "陰影"
       },
@@ -61,8 +61,9 @@
       "toggleSliders": "切換滑桿",
       "vibrance": "鮮豔度",
       "wbPickerTooltip": "白平衡選取器",
-      "wbPickerWgpuDisabled": "白平衡選取器：請在設定中禁用 WGPU。",
-      "whiteBalance": "白平衡"
+      "wbPickerWgpuDisabled": "白平衡選取器：請在設定中停用 WGPU。",
+      "whiteBalance": "白平衡",
+      "localHue": "局部色調"
     },
     "curves": {
       "channels": {
@@ -79,7 +80,7 @@
       "params": {
         "blackLevel": "黑色色階",
         "darks": "暗部",
-        "highlights": "高光",
+        "highlights": "亮部",
         "lights": "亮部",
         "shadows": "陰影",
         "whiteLevel": "白色色階"
@@ -95,11 +96,11 @@
     },
     "details": {
       "blueYellow": "藍/黃",
-      "centre": "居中",
+      "centre": "置中",
       "chromaticAberration": "色差",
       "clarity": "清晰度",
       "color": "顏色",
-      "dehaze": "去霧",
+      "dehaze": "去朦朧",
       "luminance": "亮度",
       "noiseReduction": "降噪",
       "presence": "質感",
@@ -107,7 +108,7 @@
       "sharpening": "銳化",
       "sharpness": "銳度",
       "structure": "結構",
-      "threshold": "閾值"
+      "threshold": "臨界值"
     },
     "effects": {
       "amount": "數量",
@@ -192,7 +193,7 @@
       "resetAdjustments": "重置調整",
       "stitchPanorama": "拼接全景圖",
       "tagging": "標籤",
-      "undo": "撤銷"
+      "undo": "復原"
     },
     "folders": {
       "changeIcon": "更換圖示",
@@ -250,7 +251,7 @@
       "noAlbums": "無可用相簿",
       "pasteAdjustments_one": "貼上調整",
       "pasteAdjustments_other": "貼上調整到 {{count}} 張影像",
-      "physicalCopy": "物理副本",
+      "physicalCopy": "實體副本",
       "removeFromAlbum_one": "從相簿中移除",
       "removeFromAlbum_other": "從相簿中移除 {{count}} 張影像",
       "renameImage_one": "重新命名影像",
@@ -355,7 +356,7 @@
       "noImageSelected": "未選擇影像。",
       "params": {
         "feather": "羽化",
-        "grow": "擴充套件"
+        "grow": "擴張"
       },
       "patches": {
         "aiEdit": "AI 編輯 {{count}}",
@@ -502,30 +503,30 @@
         "addNewComponent": "新增新元件",
         "applyPreset": "應用預設",
         "copyComponent": "複製元件",
-        "copyMask": "複製蒙版",
+        "copyMask": "複製遮色片",
         "deleteComponent": "刪除元件",
-        "deleteMask": "刪除蒙版",
+        "deleteMask": "刪除遮色片",
         "duplicateAndInvertComponent": "複製並反轉元件",
-        "duplicateAndInvertMask": "複製並反轉蒙版",
+        "duplicateAndInvertMask": "複製並反轉遮色片",
         "duplicateComponent": "複製元件",
-        "duplicateMask": "複製蒙版",
+        "duplicateMask": "複製遮色片",
         "hideComponent": "隱藏元件",
-        "hideMask": "隱藏蒙版",
-        "intersectMaskWith": "與蒙版相交",
+        "hideMask": "隱藏遮色片",
+        "intersectMaskWith": "與遮色片相交",
         "noPresets": "無預設",
         "pasteComponent": "貼上元件",
-        "pasteMask": "貼上蒙版",
-        "pasteMaskAdjustments": "貼上蒙版調整",
+        "pasteMask": "貼上遮色片",
+        "pasteMaskAdjustments": "貼上遮色片調整",
         "rename": "重新命名",
-        "resetMaskAdjustments": "重置蒙版調整",
+        "resetMaskAdjustments": "重置遮色片調整",
         "showComponent": "顯示元件",
-        "showMask": "顯示蒙版",
-        "subtractFromMask": "從蒙版中減去",
+        "showMask": "顯示遮色片",
+        "subtractFromMask": "從遮色片中減去",
         "switchToAdd": "切換到新增",
         "switchToIntersect": "切換到相交",
         "switchToSubtract": "切換到減去"
       },
-      "addNewMask": "新增新蒙版",
+      "addNewMask": "新增新遮色片",
       "brush": {
         "brush": "畫筆",
         "eraser": "橡皮擦",
@@ -534,39 +535,39 @@
         "size": "畫筆大小"
       },
       "comingSoon": "即將推出",
-      "createNewTitle": "建立新蒙版",
+      "createNewTitle": "建立新遮色片",
       "depthRange": {
         "far": "遠",
         "near": "近",
         "reset": "重置",
         "title": "深度範圍"
       },
-      "dropzoneText": "拖放到此處以建立新蒙版",
-      "maskAdjustmentsTitle": "蒙版調整",
-      "maskingTitle": "蒙版",
-      "masksTitle": "蒙版",
+      "dropzoneText": "拖放到此處以建立新遮色片",
+      "maskAdjustmentsTitle": "遮色片調整",
+      "maskingTitle": "遮色片",
+      "masksTitle": "遮色片",
       "params": {
         "feather": "羽化",
         "globalFeather": "全域羽化",
-        "grow": "擴充套件",
+        "grow": "擴張",
         "tolerance": "容差"
       },
       "patches": {
         "copyName": "{{name}} 副本",
         "invertedName": "{{name}} 反轉",
-        "maskName": "蒙版 {{count}}",
-        "maskName_one": "蒙版 {{count}}",
-        "maskName_other": "蒙版 {{count}}"
+        "maskName": "遮色片 {{count}}",
+        "maskName_one": "遮色片 {{count}}",
+        "maskName_other": "遮色片 {{count}}"
       },
-      "resetMaskingTooltip": "重置蒙版",
+      "resetMaskingTooltip": "重置遮色片",
       "settings": {
         "aiModelDownloading": "AI 模型下載中：",
         "applyPreset": "應用預設",
         "componentPropertiesTitle": "{{name}} 屬性",
         "copySectionSettings": "複製 {{section}} 設定",
         "invertComponent": "反轉元件",
-        "invertMask": "反轉蒙版",
-        "maskPropertiesTitle": "蒙版屬性",
+        "invertMask": "反轉遮色片",
+        "maskPropertiesTitle": "遮色片屬性",
         "noPresetsFound": "未找到預設",
         "opacity": "不透明度",
         "pasteSectionSettings": "貼上 {{section}} 設定",
@@ -577,9 +578,9 @@
       },
       "toggleAnalyticsTooltip": "切換分析顯示",
       "tooltips": {
-        "addToCurrent": "將 {{name}} 新增到當前蒙版或建立新蒙版（右鍵單擊）",
-        "createNew": "建立新 {{name}} 蒙版",
-        "showMore": "顯示更多蒙版型別"
+        "addToCurrent": "將 {{name}} 新增到當前遮色片或建立新遮色片（右鍵單擊）",
+        "createNew": "建立新 {{name}} 遮色片",
+        "showMore": "顯示更多遮色片型別"
       }
     },
     "metadata": {
@@ -600,7 +601,7 @@
       "copy": "複製",
       "emptyClickToAdd": "空（點選新增）",
       "extendedExif": {
-        "title": "擴充套件 EXIF"
+        "title": "擴充 EXIF"
       },
       "fields": {
         "author": "作者",
@@ -659,13 +660,13 @@
       },
       "status": {
         "empty": "尚未儲存預設。建立您自己的預設、從檔案匯入或探索社群預設。",
-        "getCommunity": "獲取社群預設",
+        "getCommunity": "取得社群預設",
         "loading": "載入預設中..."
       },
       "supports": {
         "cropTransform": "裁剪與變換",
         "label": "支援 {{features}}",
-        "masks": "蒙版"
+        "masks": "遮色片"
       },
       "title": "預設",
       "tooltips": {
@@ -688,7 +689,7 @@
         "export": "匯出",
         "info": "資訊",
         "inpaint": "修復",
-        "masks": "蒙版",
+        "masks": "遮色片",
         "presets": "預設"
       }
     },
@@ -703,14 +704,14 @@
         "showEdited": "顯示編輯後（B）",
         "showOriginal": "顯示原始（B）",
         "shutterSpeed": "快門速度",
-        "undo": "撤銷（Ctrl+Z）或歷史記錄（右鍵單擊）"
+        "undo": "復原（Ctrl+Z）或歷史記錄（右鍵單擊）"
       },
       "vc": "VC"
     }
   },
   "export": {
     "advanced": {
-      "exportMasks": "將蒙版匯出為單獨檔案",
+      "exportMasks": "將遮色片匯出為單獨檔案",
       "preserveFolders": "保留資料夾結構",
       "preserveTimestamps": "將檔案時間戳設為 EXIF 拍攝日期",
       "title": "匯出設定"
@@ -783,13 +784,13 @@
     "watermark": {
       "addWatermark": "新增水印",
       "anchors": {
-        "bottomCenter": "底部居中",
+        "bottomCenter": "底部置中",
         "bottomLeft": "左下角",
         "bottomRight": "右下角",
-        "center": "居中",
-        "centerLeft": "左側居中",
-        "centerRight": "右側居中",
-        "topCenter": "頂部居中",
+        "center": "置中",
+        "centerLeft": "左側置中",
+        "centerRight": "右側置中",
+        "topCenter": "頂部置中",
         "topLeft": "左上角",
         "topRight": "右上角"
       },
@@ -806,7 +807,7 @@
       "actionSave": "儲存",
       "actionSaved": "已儲存",
       "actionSaving": "儲存中...",
-      "fetchingPresets": "正在從 GitHub 獲取預設...",
+      "fetchingPresets": "正在從 GitHub 取得預設...",
       "footerHeading": "想讓您的預設被推薦？",
       "footerLinkText": "在 GitHub 上建立 Issue",
       "headerDesc": "發現社群建立的預設。",
@@ -1024,7 +1025,7 @@
       "errorTitle": "發生錯誤",
       "exportSize": "匯出大小（畫素）",
       "keepOriginalRatio": "保持原始寬高比",
-      "layout": "佈局",
+      "layout": "版面配置",
       "original": "原始",
       "saveButton": "儲存拼貼畫",
       "saved": "拼貼畫已儲存！",
@@ -1035,7 +1036,7 @@
     "configurePreset": {
       "cancel": "取消",
       "includeCropTransform": "包含裁剪與變換",
-      "includeMasks": "包含蒙版",
+      "includeMasks": "包含遮色片",
       "placeholder": "輸入預設名稱...",
       "save": "儲存",
       "titleConfigure": "配置預設",
@@ -1055,7 +1056,7 @@
       "descReplace": "覆蓋所有選中的設定，其餘重置為預設值。",
       "groups": {
         "chromaticAberration": "色差",
-        "clarityDehaze": "清晰度與去霧",
+        "clarityDehaze": "清晰度與去朦朧",
         "colorCalibration": "顏色校準",
         "colorGrading": "顏色分級",
         "colorMixer": "顏色混合器",
@@ -1066,7 +1067,7 @@
         "halationGlow": "光暈與發光",
         "lensCorrection": "鏡頭校正",
         "lut": "LUT",
-        "masks": "蒙版",
+        "masks": "遮色片",
         "noiseReduction": "降噪",
         "presence": "質感",
         "sharpness": "銳度",
@@ -1097,14 +1098,14 @@
       "placeholder": "輸入組名稱..."
     },
     "culling": {
-      "actionDelete": "移至回收站",
+      "actionDelete": "移至垃圾桶",
       "actionRateZero": "將評分設為 1 星",
       "actionReject": "標記為已拒絕（紅色標籤）",
       "applyButton_one": "應用到 1 張影像",
       "applyButton_other": "應用到 {{count}} 張影像",
       "bestImage": "最佳影像",
       "blurryImagesTab": "模糊影像",
-      "blurThreshold": "模糊閾值",
+      "blurThreshold": "模糊臨界值",
       "blurThresholdDesc": "銳度評分低於此值的影像將被標記。值越高越嚴格。",
       "cancel": "取消",
       "close": "關閉",
@@ -1122,7 +1123,7 @@
       "score": "評分：{{score}}",
       "sharpness": "銳度：{{sharpness}}",
       "similarGroupsTab": "相似組",
-      "similarityThreshold": "相似度閾值",
+      "similarityThreshold": "相似度臨界值",
       "similarityThresholdDesc": "值越低越嚴格（完全重複）。值越高越寬鬆（近似重複）。建議值 24-32。",
       "startCulling": "開始篩選",
       "starting": "啟動中...",
@@ -1180,7 +1181,7 @@
       "dateFormat": "日期格式",
       "dateFormatPlaceholder": "例如，YYYY/MM-DD",
       "deleteAfterImport": "成功匯入後刪除原始檔案",
-      "deleteWarning": "檔案將被移至系統回收站。",
+      "deleteWarning": "檔案將被移至垃圾桶。",
       "fileNaming": "檔案命名",
       "folderOrganization": "資料夾組織",
       "organizeByDate": "按日期組織到子資料夾",
@@ -1206,7 +1207,7 @@
       "lensProfileNotFound": "未找到鏡頭配置檔案",
       "manageLensesPlaceholder": "在設定中管理您的鏡頭",
       "manualSelection": "手動選擇",
-      "maskWarning": "鏡頭校正會更新基礎幾何形狀。現有蒙版可能會偏移，AI 蒙版需要重新生成。",
+      "maskWarning": "鏡頭校正會更新基礎幾何形狀。現有遮色片可能會偏移，AI 遮色片需要重新生成。",
       "modeAuto": "自動",
       "modeManual": "手動",
       "notFound": "未找到",
@@ -1226,7 +1227,7 @@
       "cancel": "取消",
       "colorTiming": "色彩時機",
       "compareTooltip": "按住以檢視原始",
-      "contrast": "對比度（分級）",
+      "contrast": "對比（分級）",
       "convertAndSave": "轉換並儲存",
       "convertAndSaveAll": "轉換並儲存全部（{{count}}）",
       "convertAndSaveAll_one": "轉換並儲存全部（{{count}}）",
@@ -1293,7 +1294,7 @@
       "compareTooltip": "按住以對比",
       "distortion": "畸變",
       "horizontal": "水平",
-      "maskWarning": "變換會更新基礎幾何形狀。現有蒙版可能會偏移，AI 蒙版需要重新生成。",
+      "maskWarning": "變換會更新基礎幾何形狀。現有遮色片可能會偏移，AI 遮色片需要重新生成。",
       "offset": "偏移",
       "original": "原始",
       "perspective": "透視",
@@ -1353,8 +1354,8 @@
       "logsButton": "開啟",
       "logsDesc": "檢視應用程式的日誌檔案以進行故障排除。日誌檔案位於：",
       "modals": {
-        "aiMessage": "您確定要從所有活動根資料夾中的所有影像中移除所有 AI 生成的標籤嗎？\n\n這不會影響使用者新增的標籤。此操作無法撤銷。",
-        "allMessage": "您確定要從所有活動根資料夾中的所有影像中移除所有 AI 生成和使用者新增的標籤嗎？\n\n此操作無法撤銷。",
+        "aiMessage": "您確定要從所有活動根資料夾中的所有影像中移除所有 AI 生成的標籤嗎？\n\n這不會影響使用者新增的標籤。此操作無法復原。",
+        "allMessage": "您確定要從所有活動根資料夾中的所有影像中移除所有 AI 生成和使用者新增的標籤嗎？\n\n此操作無法復原。",
         "cacheMessage": "您確定要清除縮圖快取嗎？\n\n所有縮圖將需要重新生成，對於大型資料夾可能會很慢。",
         "confirmAiTitle": "確認刪除 AI 標籤",
         "confirmAllTitle": "確認刪除所有標籤",
@@ -1380,7 +1381,7 @@
         "clearingAll": "正在從附屬檔案中清除所有標籤...",
         "clearingCache": "正在清除縮圖快取...",
         "deleting": "正在刪除附屬檔案，請稍候...",
-        "failedToGetPath": "無法獲取日誌檔案路徑。",
+        "failedToGetPath": "無法取得日誌檔案路徑。",
         "processing": "處理中...",
         "sidecarSuccess": "{{count}} 個附屬檔案已成功刪除。",
         "sidecarSuccess_one": "{{count}} 個附屬檔案已成功刪除。",
@@ -1452,10 +1453,10 @@
         "toggle_export": "切換匯出面板",
         "toggle_fullscreen": "切換全屏",
         "toggle_library_exif": "切換 EXIF 疊加",
-        "toggle_masks": "切換蒙版面板",
+        "toggle_masks": "切換遮色片面板",
         "toggle_metadata": "切換後設資料面板",
         "toggle_presets": "切換預設面板",
-        "undo": "撤銷調整",
+        "undo": "復原調整",
         "zoom_100": "縮放到 100%",
         "zoom_fit": "縮放以適應",
         "zoom_in": "放大",
@@ -1500,7 +1501,7 @@
             "usageStats": "{{requests}} / {{limit}} 請求"
           },
           "signedOut": {
-            "noAccount": "還沒有賬戶？",
+            "noAccount": "還沒有帳戶？",
             "signup": "在網站上註冊",
             "upgradeBtn": "在網站上升級",
             "upgradeDesc": "要使用雲端 AI 功能，您需要訂閱雲端服務。"
@@ -1509,10 +1510,10 @@
         },
         "connector": {
           "address": "AI 聯結器地址",
-          "addressDesc": "輸入您正在執行的 AI 聯結器例項的地址和埠。這是使用生成式 AI 功能所必需的。",
+          "addressDesc": "輸入您正在執行的 AI 聯結器實例的地址和連接埠。這是使用生成式 AI 功能所必需的。",
           "description": "對於擁有強大 GPU 且希望最大程度控制的使用者，可以將 RapidRAW 連線到您自己的聯結器伺服器。這為您提供了技術工作流的完全控制。",
           "failed": "連線失敗。",
-          "feature1": "使用您自己的 ComfyUI 例項",
+          "feature1": "使用您自己的 ComfyUI 實例",
           "feature2": "免費的進階生成式編輯",
           "feature3": "自定義工作流選擇",
           "success": "連線成功！",
@@ -1522,7 +1523,7 @@
         },
         "cpu": {
           "description": "直接整合到 RapidRAW 中，這些功能完全在您的計算機上執行。它們快速、免費且無需設定，非常適合日常加速工作流程。",
-          "feature1": "AI 蒙版（主體、天空、前景）",
+          "feature1": "AI 遮色片（主體、天空、前景）",
           "feature2": "自動影像標籤",
           "feature3": "簡單的 CPU 生成式替換",
           "title": "內建 AI（CPU）"
@@ -1553,12 +1554,12 @@
       "imageCacheDesc": "儲存在記憶體中的全解析度影像最大數量。較高的值可使最近編輯的影像之間切換即時完成，但會顯著增加記憶體使用。",
       "images": "張影像",
       "linuxCompat": "Linux 相容模式",
-      "linuxCompatDesc": "啟用針對常見 GPU 驅動和顯示伺服器問題的相容方案。禁用此選項以啟用完整的 GPU 加速。",
+      "linuxCompatDesc": "啟用針對常見 GPU 驅動和顯示伺服器問題的相容方案。停用此選項以啟用完整的 GPU 加速。",
       "linuxCompatLabel": "啟用相容模式",
       "livePreviewQuality": "即時預覽品質",
       "livePreviewQualityDesc": "控制拖動滑桿時影像的解析度和壓縮。較低的品質可顯著提高反應速度。",
       "livePreviews": "即時互動式預覽",
-      "livePreviewsDesc": "拖動滑桿時立即更新預覽。如果介面在調整時感覺卡頓，請禁用此選項。",
+      "livePreviewsDesc": "拖動滑桿時立即更新預覽。如果介面在調整時感覺卡頓，請停用此選項。",
       "modes": {
         "dynamic": "動態",
         "static": "固定解析度"
@@ -1575,8 +1576,8 @@
         "defaultRawTonemapperDesc": "應用於 RAW 影像的色調映射器。",
         "enablePreprocessingNonRaws": "對非 RAW 影像啟用",
         "enableTonemapperOverride": "啟用色調映射覆蓋",
-        "highlightRecovery": "RAW 高光恢復",
-        "highlightRecoveryDesc": "控制從 RAW 檔案的裁剪高光中恢復細節的程度。較高的值可恢復更多細節，但可能引入紫色偽影。",
+        "highlightRecovery": "RAW 亮部恢復",
+        "highlightRecoveryDesc": "控制從 RAW 檔案的裁剪亮部中恢復細節的程度。較高的值可恢復更多細節，但可能引入紫色偽影。",
         "linearOptions": {
           "auto": "自動",
           "gamma": "應用 Gamma",
@@ -1615,8 +1616,8 @@
       "thumbnailResDesc": "確定生成的相簿縮圖的解析度。較高的值可在載入時產生更清晰的影像。",
       "title": "處理引擎",
       "wgpu": "WGPU 直接渲染",
-      "wgpuDescAndroid": "繞過瀏覽器編碼，實現即時回應的即時預覽。（在 Android 上已禁用：原生 WGPU 表面建立目前不支援與移動端 Webview 同時執行。）",
-      "wgpuDescLinux": "繞過瀏覽器編碼，實現即時回應的即時預覽。（在 Linux 上已禁用：Tauri 使用 GTK 作為 Webview，與同一 X11 表面上的 WGPU 衝突並導致閃爍。）",
+      "wgpuDescAndroid": "繞過瀏覽器編碼，實現即時回應的即時預覽。（在 Android 上已停用：原生 WGPU 表面建立目前不支援與移動端 Webview 同時執行。）",
+      "wgpuDescLinux": "繞過瀏覽器編碼，實現即時回應的即時預覽。（在 Linux 上已停用：Tauri 使用 GTK 作為 Webview，與同一 X11 表面上的 WGPU 衝突並導致閃爍。）",
       "wgpuDescRecommended": "繞過瀏覽器編碼，實現即時回應的即時預覽。強烈推薦以獲得最佳效能。",
       "wgpuLabel": "啟用直接 WGPU 渲染",
       "workerThreads": "縮圖工作執行緒數",
@@ -1654,7 +1655,7 @@
       "description": "衷心感謝以下專案，它們在 RapidRAW 的開發過程中非常重要：",
       "list": {
         "darktable": "為部分參考實現提供了指導。",
-        "depth": "為強大的單目深度估計模型提供支援，實現了 AI 深度蒙版功能。",
+        "depth": "為強大的單目深度估計模型提供支援，實現了 AI 深度遮色片功能。",
         "lama": "為強大且簡單的影像修復模型提供支援，實現了內容感知填充和物件移除。",
         "lensfun": "為無價的開源庫和全面的資料庫提供支援，實現了自動鏡頭校正。",
         "negpy": "為負片轉換邏輯提供了靈感。",
@@ -1697,7 +1698,7 @@
       "zoomLabelReset": "重置縮放"
     },
     "collapsibleSection": {
-      "disableSection": "禁用部分",
+      "disableSection": "停用部分",
       "enableSection": "啟用部分"
     },
     "colorWheel": {
