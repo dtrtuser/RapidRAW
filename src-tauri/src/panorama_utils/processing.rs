@@ -29,10 +29,48 @@ pub fn calculate_downscale_dimensions(width: u32, height: u32) -> (u32, u32, f64
     (new_width, new_height, scale_factor)
 }
 
+pub fn normalize_grayscale(img: &GrayImage) -> GrayImage {
+    let mut minimum = u8::MAX;
+    let mut maximum = u8::MIN;
+    for pixel in img.pixels() {
+        let value = pixel[0];
+        if value < minimum {
+            minimum = value;
+        }
+        if value > maximum {
+            maximum = value;
+        }
+    }
+    if maximum <= minimum {
+        return img.clone();
+    }
+    let span = (maximum - minimum) as f32;
+    let (width, height) = img.dimensions();
+    GrayImage::from_fn(width, height, |x, y| {
+        let value = img.get_pixel(x, y)[0];
+        let stretched = ((value - minimum) as f32 / span * 255.0).round();
+        Luma([stretched as u8])
+    })
+}
+
 pub fn find_features(img: &GrayImage, brief_pairs: &[(Point2<i32>, Point2<i32>)]) -> Vec<Feature> {
+    find_features_tuned(
+        img,
+        brief_pairs,
+        FAST_THRESHOLD,
+        NON_MAXIMA_SUPPRESSION_RADIUS,
+    )
+}
+
+pub fn find_features_tuned(
+    img: &GrayImage,
+    brief_pairs: &[(Point2<i32>, Point2<i32>)],
+    fast_threshold: u8,
+    non_maxima_suppression_radius: f32,
+) -> Vec<Feature> {
     let blurred_img_u8 = imageproc::filter::gaussian_blur_f32(img, 1.5);
-    let corners = corners_fast9(&blurred_img_u8, FAST_THRESHOLD);
-    let keypoints = non_maximal_suppression(&corners, NON_MAXIMA_SUPPRESSION_RADIUS);
+    let corners = corners_fast9(&blurred_img_u8, fast_threshold);
+    let keypoints = non_maximal_suppression(&corners, non_maxima_suppression_radius);
     let blurred_img_f32 = gaussian_blur_f32(&convert_gray_u8_to_f32(img), 2.0);
     let features: Vec<Feature> = keypoints
         .par_iter()
@@ -401,4 +439,29 @@ pub fn generate_low_detail_mask(gray_full: &GrayImage) -> GrayImage {
             }
         });
     mask
+}
+
+#[cfg(test)]
+mod normalize_grayscale_tests {
+    use super::normalize_grayscale;
+    use image::{GrayImage, Luma};
+
+    #[test]
+    fn stretches_compressed_range_to_full_span() {
+        let mut img = GrayImage::new(2, 2);
+        img.put_pixel(0, 0, Luma([100]));
+        img.put_pixel(1, 0, Luma([120]));
+        img.put_pixel(0, 1, Luma([140]));
+        img.put_pixel(1, 1, Luma([160]));
+        let normalized = normalize_grayscale(&img);
+        assert_eq!(normalized.get_pixel(0, 0)[0], 0);
+        assert_eq!(normalized.get_pixel(1, 1)[0], 255);
+    }
+
+    #[test]
+    fn returns_clone_when_image_is_flat() {
+        let img = GrayImage::from_pixel(3, 3, Luma([42]));
+        let normalized = normalize_grayscale(&img);
+        assert!(normalized.pixels().all(|pixel| pixel[0] == 42));
+    }
 }
