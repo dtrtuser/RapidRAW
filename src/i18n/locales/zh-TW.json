@@ -498,6 +498,11 @@
         "transform": "透視和梯形校正"
       }
     },
+    "externalEdit": {
+      "done": "完成",
+      "exporting": "正在匯出…",
+      "savesTo": "外部編輯 — 儲存至"
+    },
     "masks": {
       "actions": {
         "addNewComponent": "新增新元件",

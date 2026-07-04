@@ -5,76 +5,64 @@ LOCALES_DIR = Path("./locales")
 
 TRANSLATIONS = {
     "de": {
-        "empty": "Noch keine LUTs — importiere welche",
-        "import": "Profile importieren",
-        "importFailed": "LUTs konnten nicht importiert werden",
-        "removeLut": "LUT entfernen"
+        "done": "Fertig",
+        "exporting": "Exportieren…",
+        "savesTo": "Externe Bearbeitung — speichert in"
     },
     "en": {
-        "empty": "No LUTs yet — import some",
-        "import": "Import profiles",
-        "importFailed": "Failed to import LUTs",
-        "removeLut": "Remove LUT"
+        "done": "Done",
+        "exporting": "Exporting…",
+        "savesTo": "External edit — saves to"
     },
     "es": {
-        "empty": "Aún no hay LUTs — importa algunos",
-        "import": "Importar perfiles",
-        "importFailed": "Error al importar LUTs",
-        "removeLut": "Eliminar LUT"
+        "done": "Listo",
+        "exporting": "Exportando…",
+        "savesTo": "Edición externa: se guarda en"
     },
     "fr": {
-        "empty": "Pas encore de LUT — importez-en",
-        "import": "Importer des profils",
-        "importFailed": "Échec de l'importation des LUT",
-        "removeLut": "Supprimer la LUT"
+        "done": "Terminé",
+        "exporting": "Exportation…",
+        "savesTo": "Modification externe — s'enregistre dans"
     },
     "it": {
-        "empty": "Nessuna LUT ancora — importane alcune",
-        "import": "Importa profili",
-        "importFailed": "Impossibile importare le LUT",
-        "removeLut": "Rimuovi LUT"
+        "done": "Fatto",
+        "exporting": "Esportazione…",
+        "savesTo": "Modifica esterna — salva in"
     },
     "ja": {
-        "empty": "LUTはまだありません — インポートしてください",
-        "import": "プロファイルをインポート",
-        "importFailed": "LUTのインポートに失敗しました",
-        "removeLut": "LUTを削除"
+        "done": "完了",
+        "exporting": "書き出し中…",
+        "savesTo": "外部編集 — 保存先"
     },
     "ko": {
-        "empty": "아직 LUT가 없습니다 — 가져오기를 수행하세요",
-        "import": "프로필 가져오기",
-        "importFailed": "LUT 가져오기 실패",
-        "removeLut": "LUT 제거"
+        "done": "완료",
+        "exporting": "내보내는 중…",
+        "savesTo": "외부 편집 — 저장 위치:"
     },
     "pl": {
-        "empty": "Brak LUT — zaimportuj jakieś",
-        "import": "Importuj profile",
-        "importFailed": "Nie udało się zaimportować LUT",
-        "removeLut": "Usuń LUT"
+        "done": "Gotowe",
+        "exporting": "Eksportowanie…",
+        "savesTo": "Zewnętrzna edycja — zapisuje do"
     },
     "pt": {
-        "empty": "Sem LUTs ainda — importe alguns",
-        "import": "Importar perfis",
-        "importFailed": "Falha ao importar LUTs",
-        "removeLut": "Remover LUT"
+        "done": "Concluído",
+        "exporting": "Exportando…",
+        "savesTo": "Edição externa — salva em"
     },
     "ru": {
-        "empty": "Пока нет LUT — импортируйте их",
-        "import": "Импорт профилей",
-        "importFailed": "Не удалось импортировать LUT",
-        "removeLut": "Удалить LUT"
+        "done": "Готово",
+        "exporting": "Экспорт…",
+        "savesTo": "Внешнее редактирование — сохраняется в"
     },
     "zh-CN": {
-        "empty": "暂无 LUT — 请导入一些",
-        "import": "导入配置文件",
-        "importFailed": "导入 LUT 失败",
-        "removeLut": "移除 LUT"
+        "done": "完成",
+        "exporting": "正在导出…",
+        "savesTo": "外部编辑 — 保存至"
     },
     "zh-TW": {
-        "empty": "暫無 LUT — 請匯入一些",
-        "import": "匯入設定檔",
-        "importFailed": "匯入 LUT 失敗",
-        "removeLut": "移除 LUT"
+        "done": "完成",
+        "exporting": "正在匯出…",
+        "savesTo": "外部編輯 — 儲存至"
     }
 }
 
@@ -98,18 +86,18 @@ def update_json_file(file_path: Path, trans: dict):
         print(f"Error parsing JSON in {file_path.name}. Skipping.")
         return
 
-    if "ui" not in data or not isinstance(data["ui"], dict):
-        data["ui"] = {}
-    if "lut" not in data["ui"] or not isinstance(data["ui"]["lut"], dict):
-        data["ui"]["lut"] = {}
+    # Ensure the path data -> editor -> externalEdit exists
+    if "editor" not in data or not isinstance(data["editor"], dict):
+        data["editor"] = {}
+    if "externalEdit" not in data["editor"] or not isinstance(data["editor"]["externalEdit"], dict):
+        data["editor"]["externalEdit"] = {}
 
-    lut_node = data["ui"]["lut"]
+    ext_node = data["editor"]["externalEdit"]
+    ext_node["done"] = trans["done"]
+    ext_node["exporting"] = trans["exporting"]
+    ext_node["savesTo"] = trans["savesTo"]
 
-    lut_node["empty"] = trans["empty"]
-    lut_node["import"] = trans["import"]
-    lut_node["importFailed"] = trans["importFailed"]
-    lut_node["removeLut"] = trans["removeLut"]
-
+    # Sort keys alphabetically and write out
     sorted_data = sort_dict_recursively(data)
 
     with open(file_path, "w", encoding="utf-8") as f:

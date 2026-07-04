@@ -498,6 +498,11 @@
         "transform": "Perspektiv- und Trapezkorrektur"
       }
     },
+    "externalEdit": {
+      "done": "Fertig",
+      "exporting": "Exportieren…",
+      "savesTo": "Externe Bearbeitung — speichert in"
+    },
     "masks": {
       "actions": {
         "addNewComponent": "Neue Komponente hinzufügen",

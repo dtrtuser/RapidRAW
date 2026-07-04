@@ -498,6 +498,11 @@
         "transform": "원근 및 키스톤 보정"
       }
     },
+    "externalEdit": {
+      "done": "완료",
+      "exporting": "내보내는 중…",
+      "savesTo": "외부 편집 — 저장 위치:"
+    },
     "masks": {
       "actions": {
         "addNewComponent": "새 구성 요소 추가",

@@ -498,6 +498,11 @@
         "transform": "Correzione prospettiva e distorsione trapezoidale"
       }
     },
+    "externalEdit": {
+      "done": "Fatto",
+      "exporting": "Esportazione…",
+      "savesTo": "Modifica esterna — salva in"
+    },
     "masks": {
       "actions": {
         "addNewComponent": "Aggiungi Nuovo Componente",

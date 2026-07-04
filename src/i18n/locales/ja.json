@@ -498,6 +498,11 @@
         "transform": "遠近歪みとあおり補正"
       }
     },
+    "externalEdit": {
+      "done": "完了",
+      "exporting": "書き出し中…",
+      "savesTo": "外部編集 — 保存先"
+    },
     "masks": {
       "actions": {
         "addNewComponent": "新しいコンポーネントを追加",
