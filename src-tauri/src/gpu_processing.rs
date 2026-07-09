@@ -130,7 +130,7 @@ impl WgpuDisplay {
                 }
             }
             queue.submit(Some(encoder.finish()));
-            output.present();
+            queue.present(output);
         }
     }
 }
@@ -278,6 +278,7 @@ pub fn get_or_init_gpu_context(
             width: size.width.max(1),
             height: size.height.max(1),
             format: swapchain_format,
+            color_space: wgpu::SurfaceColorSpace::Auto,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode,
@@ -467,7 +468,10 @@ fn read_texture_data_roi(
         .map_err(|e| format!("Failed receiving GPU map result: {}", e))?;
     map_result.map_err(|e| e.to_string())?;
 
-    let padded_data = buffer_slice.get_mapped_range().to_vec();
+    let padded_data = buffer_slice
+        .get_mapped_range()
+        .map_err(|e| format!("Failed to get mapped GPU buffer range: {}", e))?
+        .to_vec();
     output_buffer.unmap();
 
     if padded_bytes_per_row == unpadded_bytes_per_row {
@@ -1903,7 +1907,13 @@ fn process_and_get_dynamic_image_inner(
                 }
 
                 if let Ok(Ok(())) = rx.recv() {
-                    let padded_data = buffer_slice.get_mapped_range().to_vec();
+                    let padded_data = match buffer_slice.get_mapped_range() {
+                        Ok(range) => range.to_vec(),
+                        Err(e) => {
+                            log::error!("Failed to get mapped GPU buffer range: {}", e);
+                            return;
+                        }
+                    };
                     output_buffer.unmap();
 
                     let mut unpadded_data =
