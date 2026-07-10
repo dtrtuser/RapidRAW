@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::io::Cursor;
 
 use base64::{Engine as _, engine::general_purpose};
-use image::{DynamicImage, GenericImageView, Rgb, RgbImage, Rgba, RgbaImage};
+use image::{DynamicImage, GenericImageView, Rgb, RgbImage, RgbaImage};
 use serde_json::Value;
 
 use crate::ai_connector;
@@ -66,28 +66,63 @@ pub async fn generate_manual_cleanup_patch(
         apply_unwarp_geometry(Cow::Borrowed(&mask_dynamic), &current_adjustments).into_owned();
     let mask_bitmap = unwarped_dynamic.to_luma8();
 
-    let mut min_x = img_w;
-    let mut min_y = img_h;
-    let mut max_x = 0;
+    let mask_raw = mask_bitmap.as_raw();
+    let img_w_usize = img_w as usize;
+    let img_h_usize = img_h as usize;
+
+    let mut min_y = img_h_usize;
     let mut max_y = 0;
 
-    for y in 0..img_h {
-        for x in 0..img_w {
-            if mask_bitmap.get_pixel(x, y)[0] > 0 {
-                min_x = min_x.min(x);
-                min_y = min_y.min(y);
-                max_x = max_x.max(x);
-                max_y = max_y.max(y);
+    for y in 0..img_h_usize {
+        let row_start = y * img_w_usize;
+        if mask_raw[row_start..row_start + img_w_usize]
+            .iter()
+            .any(|&p| p > 0)
+        {
+            min_y = y;
+            break;
+        }
+    }
+
+    if min_y == img_h_usize {
+        return Err("Mask is empty.".to_string());
+    }
+
+    for y in (min_y..img_h_usize).rev() {
+        let row_start = y * img_w_usize;
+        if mask_raw[row_start..row_start + img_w_usize]
+            .iter()
+            .any(|&p| p > 0)
+        {
+            max_y = y;
+            break;
+        }
+    }
+
+    let mut min_x = img_w_usize;
+    let mut max_x = 0;
+    for y in min_y..=max_y {
+        let row_start = y * img_w_usize;
+        let row = &mask_raw[row_start..row_start + img_w_usize];
+        if let Some(first) = row.iter().position(|&p| p > 0) {
+            if first < min_x {
+                min_x = first;
+            }
+        }
+        if let Some(last) = row.iter().rposition(|&p| p > 0) {
+            if last > max_x {
+                max_x = last;
             }
         }
     }
 
-    if min_x > max_x {
-        return Err("Mask is empty.".to_string());
-    }
-
     let offset_x = source_point.0.round() as i32 - min_x as i32;
     let offset_y = source_point.1.round() as i32 - min_y as i32;
+
+    let min_x_u32 = min_x as u32;
+    let min_y_u32 = min_y as u32;
+    let crop_w = (max_x - min_x + 1) as u32;
+    let crop_h = (max_y - min_y + 1) as u32;
 
     let sub_masks_val = serde_json::to_value(&patch_definition.sub_masks).unwrap_or(Value::Null);
     let mut is_heal = false;
@@ -105,16 +140,21 @@ pub async fn generate_manual_cleanup_patch(
         is_heal = true;
     }
 
-    let mut color_image = RgbImage::new(img_w, img_h);
+    let mut color_image = RgbImage::new(crop_w, crop_h);
 
     if !is_heal {
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                if mask_bitmap.get_pixel(x, y)[0] > 0 {
-                    let src_x = (x as i32 + offset_x).clamp(0, img_w as i32 - 1) as u32;
-                    let src_y = (y as i32 + offset_y).clamp(0, img_h as i32 - 1) as u32;
+                let px_x = x as u32;
+                let px_y = y as u32;
+                if mask_bitmap.get_pixel(px_x, px_y)[0] > 0 {
+                    let src_x = (px_x as i32 + offset_x).clamp(0, img_w as i32 - 1) as u32;
+                    let src_y = (px_y as i32 + offset_y).clamp(0, img_h as i32 - 1) as u32;
                     let src_px = source_image.get_pixel(src_x, src_y);
-                    color_image.put_pixel(x, y, Rgb([src_px[0], src_px[1], src_px[2]]));
+
+                    let dest_x = px_x - min_x_u32;
+                    let dest_y = px_y - min_y_u32;
+                    color_image.put_pixel(dest_x, dest_y, Rgb([src_px[0], src_px[1], src_px[2]]));
                 }
             }
         }
@@ -190,7 +230,6 @@ pub async fn generate_manual_cleanup_patch(
                 v_b[idx] = (1.0 - omega) * v_b[idx] + omega * 0.25 * sum_b;
             }
         }
-
         for &(x, y) in &omega_coords {
             let img_x = (min_x as i32 + x as i32 - 1) as u32;
             let img_y = (min_y as i32 + y as i32 - 1) as u32;
@@ -204,13 +243,20 @@ pub async fn generate_manual_cleanup_patch(
             let out_g = (src_px[1] as f32 + v_g[idx]).clamp(0.0, 255.0) as u8;
             let out_b = (src_px[2] as f32 + v_b[idx]).clamp(0.0, 255.0) as u8;
 
-            color_image.put_pixel(img_x, img_y, Rgb([out_r, out_g, out_b]));
+            let out_x = img_x as i32 - min_x as i32;
+            let out_y = img_y as i32 - min_y as i32;
+            if out_x >= 0 && out_x < crop_w as i32 && out_y >= 0 && out_y < crop_h as i32 {
+                color_image.put_pixel(out_x as u32, out_y as u32, Rgb([out_r, out_g, out_b]));
+            }
         }
     }
 
     let quality = 92;
 
-    let mut color_buf = Cursor::new(Vec::new());
+    let output_mask =
+        image::imageops::crop_imm(&mask_bitmap, min_x_u32, min_y_u32, crop_w, crop_h).to_image();
+
+    let mut color_buf = Cursor::new(Vec::with_capacity(32768));
     color_image
         .write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(
             &mut color_buf,
@@ -219,8 +265,8 @@ pub async fn generate_manual_cleanup_patch(
         .map_err(|e| e.to_string())?;
     let color_base64 = general_purpose::STANDARD.encode(color_buf.get_ref());
 
-    let mut mask_buf = Cursor::new(Vec::new());
-    mask_bitmap
+    let mut mask_buf = Cursor::new(Vec::with_capacity(32768));
+    output_mask
         .write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(
             &mut mask_buf,
             quality,
@@ -230,7 +276,11 @@ pub async fn generate_manual_cleanup_patch(
 
     let result_json = serde_json::json!({
         "color": color_base64,
-        "mask": mask_base64
+        "mask": mask_base64,
+        "offsetX": min_x_u32,
+        "offsetY": min_y_u32,
+        "width": crop_w,
+        "height": crop_h
     })
     .to_string();
 
@@ -310,9 +360,12 @@ pub async fn invoke_generative_replace_with_mask_def(
         let base_url = "https://getrapidraw.com/api";
 
         let mut rgba_mask = RgbaImage::new(img_w, img_h);
-        for (x, y, luma_pixel) in mask_bitmap.enumerate_pixels() {
-            let intensity = luma_pixel[0];
-            rgba_mask.put_pixel(x, y, Rgba([intensity, intensity, intensity, 255]));
+        for (src_val, dst_chunk) in mask_bitmap.as_raw().iter().zip(rgba_mask.chunks_mut(4)) {
+            let intensity = *src_val;
+            dst_chunk[0] = intensity;
+            dst_chunk[1] = intensity;
+            dst_chunk[2] = intensity;
+            dst_chunk[3] = 255;
         }
         let mask_image_dynamic = DynamicImage::ImageRgba8(rgba_mask);
 
@@ -334,9 +387,12 @@ pub async fn invoke_generative_replace_with_mask_def(
         let base_url = format!("http://{}", address);
 
         let mut rgba_mask = RgbaImage::new(img_w, img_h);
-        for (x, y, luma_pixel) in mask_bitmap.enumerate_pixels() {
-            let intensity = luma_pixel[0];
-            rgba_mask.put_pixel(x, y, Rgba([intensity, intensity, intensity, 255]));
+        for (src_val, dst_chunk) in mask_bitmap.as_raw().iter().zip(rgba_mask.chunks_mut(4)) {
+            let intensity = *src_val;
+            dst_chunk[0] = intensity;
+            dst_chunk[1] = intensity;
+            dst_chunk[2] = intensity;
+            dst_chunk[3] = 255;
         }
         let mask_image_dynamic = DynamicImage::ImageRgba8(rgba_mask);
 
@@ -360,31 +416,99 @@ pub async fn invoke_generative_replace_with_mask_def(
     };
 
     let (patch_w, patch_h) = patch_rgba.dimensions();
-    let scaled_mask_bitmap = image::imageops::resize(
-        &mask_bitmap,
-        patch_w,
-        patch_h,
-        image::imageops::FilterType::Lanczos3,
-    );
-    let mut color_image = RgbImage::new(patch_w, patch_h);
-    let mask_image = scaled_mask_bitmap.clone();
+    let final_patch = if patch_w != img_w || patch_h != img_h {
+        image::imageops::resize(
+            &patch_rgba,
+            img_w,
+            img_h,
+            image::imageops::FilterType::Lanczos3,
+        )
+    } else {
+        patch_rgba.clone()
+    };
 
-    for y in 0..patch_h {
-        for x in 0..patch_w {
-            let mask_value = scaled_mask_bitmap.get_pixel(x, y)[0];
+    let mask_raw = mask_bitmap.as_raw();
+    let img_w_usize = img_w as usize;
+    let img_h_usize = img_h as usize;
 
-            if mask_value > 0 {
-                let patch_pixel = patch_rgba.get_pixel(x, y);
-                color_image.put_pixel(x, y, Rgb([patch_pixel[0], patch_pixel[1], patch_pixel[2]]));
-            } else {
-                color_image.put_pixel(x, y, Rgb([0, 0, 0]));
+    let mut min_y = img_h_usize;
+    let mut max_y = 0;
+
+    for y in 0..img_h_usize {
+        let row_start = y * img_w_usize;
+        if mask_raw[row_start..row_start + img_w_usize]
+            .iter()
+            .any(|&p| p > 0)
+        {
+            min_y = y;
+            break;
+        }
+    }
+    if min_y == img_h_usize {
+        return Err("Mask is empty.".to_string());
+    }
+
+    for y in (min_y..img_h_usize).rev() {
+        let row_start = y * img_w_usize;
+        if mask_raw[row_start..row_start + img_w_usize]
+            .iter()
+            .any(|&p| p > 0)
+        {
+            max_y = y;
+            break;
+        }
+    }
+    let mut min_x = img_w_usize;
+    let mut max_x = 0;
+    for y in min_y..=max_y {
+        let row_start = y * img_w_usize;
+        let row = &mask_raw[row_start..row_start + img_w_usize];
+        if let Some(first) = row.iter().position(|&p| p > 0) {
+            if first < min_x {
+                min_x = first;
+            }
+        }
+        if let Some(last) = row.iter().rposition(|&p| p > 0) {
+            if last > max_x {
+                max_x = last;
             }
         }
     }
 
-    let quality = 92;
+    let min_x_u32 = min_x as u32;
+    let min_y_u32 = min_y as u32;
+    let crop_w = (max_x - min_x + 1) as u32;
+    let crop_h = (max_y - min_y + 1) as u32;
 
-    let mut color_buf = Cursor::new(Vec::new());
+    let mut color_image = RgbImage::new(crop_w, crop_h);
+
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            let px_x = x as u32;
+            let px_y = y as u32;
+            let mask_value = mask_bitmap.get_pixel(px_x, px_y)[0];
+
+            let out_x = px_x - min_x_u32;
+            let out_y = px_y - min_y_u32;
+
+            if mask_value > 0 {
+                let patch_pixel = final_patch.get_pixel(px_x, px_y);
+                color_image.put_pixel(
+                    out_x,
+                    out_y,
+                    Rgb([patch_pixel[0], patch_pixel[1], patch_pixel[2]]),
+                );
+            } else {
+                color_image.put_pixel(out_x, out_y, Rgb([0, 0, 0]));
+            }
+        }
+    }
+
+    let output_mask =
+        image::imageops::crop_imm(&mask_bitmap, min_x_u32, min_y_u32, crop_w, crop_h).to_image();
+
+    let quality = 92;
+    let mut color_buf = Cursor::new(Vec::with_capacity(32768));
     color_image
         .write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(
             &mut color_buf,
@@ -393,8 +517,8 @@ pub async fn invoke_generative_replace_with_mask_def(
         .map_err(|e| e.to_string())?;
     let color_base64 = general_purpose::STANDARD.encode(color_buf.get_ref());
 
-    let mut mask_buf = Cursor::new(Vec::new());
-    mask_image
+    let mut mask_buf = Cursor::new(Vec::with_capacity(32768));
+    output_mask
         .write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(
             &mut mask_buf,
             quality,
@@ -404,7 +528,11 @@ pub async fn invoke_generative_replace_with_mask_def(
 
     let result_json = serde_json::json!({
         "color": color_base64,
-        "mask": mask_base64
+        "mask": mask_base64,
+        "offsetX": min_x_u32,
+        "offsetY": min_y_u32,
+        "width": crop_w,
+        "height": crop_h
     })
     .to_string();
 

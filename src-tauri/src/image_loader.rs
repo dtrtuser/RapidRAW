@@ -377,6 +377,16 @@ pub fn composite_patches_on_image(
     for patch_obj in visible_patches {
         let patch_data = patch_obj.get("patchData").context("Missing patchData")?;
 
+        let offset_x = patch_data
+            .get("offsetX")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as u32);
+        let offset_y = patch_data
+            .get("offsetY")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as u32);
+        let is_cropped = offset_x.is_some() && offset_y.is_some();
+
         let mask_bitmap = if let Some(mask_b64) = patch_data
             .get("mask")
             .and_then(|v| v.as_str())
@@ -384,7 +394,7 @@ pub fn composite_patches_on_image(
         {
             let mask_bytes = general_purpose::STANDARD.decode(mask_b64)?;
             let mask_img = image::load_from_memory(&mask_bytes)?.to_luma8();
-            if mask_img.width() != base_w || mask_img.height() != base_h {
+            if !is_cropped && (mask_img.width() != base_w || mask_img.height() != base_h) {
                 imageops::resize(&mask_img, base_w, base_h, imageops::FilterType::Lanczos3)
             } else {
                 mask_img
@@ -403,8 +413,29 @@ pub fn composite_patches_on_image(
                 sub_masks: patch_info.sub_masks,
             };
 
-            generate_mask_bitmap(&mask_def, base_w, base_h, 1.0, (0.0, 0.0), None)
-                .context("Failed to generate mask from sub_masks for compositing")?
+            let mut gen_mask =
+                generate_mask_bitmap(&mask_def, base_w, base_h, 1.0, (0.0, 0.0), None)
+                    .context("Failed to generate mask from sub_masks for compositing")?;
+
+            if let (Some(ox), Some(oy)) = (offset_x, offset_y) {
+                let w = patch_data
+                    .get("width")
+                    .and_then(|v| v.as_u64())
+                    .map(|v| v as u32)
+                    .unwrap_or(base_w);
+                let h = patch_data
+                    .get("height")
+                    .and_then(|v| v.as_u64())
+                    .map(|v| v as u32)
+                    .unwrap_or(base_h);
+
+                let crop_w = w.min(base_w.saturating_sub(ox));
+                let crop_h = h.min(base_h.saturating_sub(oy));
+
+                gen_mask = imageops::crop_imm(&gen_mask, ox, oy, crop_w, crop_h).to_image();
+            }
+
+            gen_mask
         };
 
         let color_b64 = patch_data
@@ -415,7 +446,7 @@ pub fn composite_patches_on_image(
         let color_image_u8 = image::load_from_memory(&color_bytes)?.to_rgb8();
 
         let (patch_w, patch_h) = color_image_u8.dimensions();
-        let color_image_f32 = if base_w != patch_w || base_h != patch_h {
+        let color_image_f32 = if !is_cropped && (base_w != patch_w || base_h != patch_h) {
             let resized = imageops::resize(
                 &color_image_u8,
                 base_w,
@@ -427,29 +458,61 @@ pub fn composite_patches_on_image(
             DynamicImage::ImageRgb8(color_image_u8).to_rgb32f()
         };
 
-        composited_rgba
-            .par_chunks_mut((base_w * 4) as usize)
-            .enumerate()
-            .for_each(|(y, row)| {
-                for x in 0..base_w as usize {
-                    let mask_value = mask_bitmap.get_pixel(x as u32, y as u32)[0];
+        if let (Some(ox), Some(oy)) = (offset_x, offset_y) {
+            let max_x = (ox + patch_w).min(base_w);
+            let max_y = (oy + patch_h).min(base_h);
+
+            for y in oy..max_y {
+                let py = y - oy;
+                for x in ox..max_x {
+                    let px = x - ox;
+
+                    if px >= mask_bitmap.width() || py >= mask_bitmap.height() {
+                        continue;
+                    }
+
+                    let mask_value = mask_bitmap.get_pixel(px, py)[0];
 
                     if mask_value > 0 {
-                        let patch_pixel = color_image_f32.get_pixel(x as u32, y as u32);
+                        let patch_pixel = color_image_f32.get_pixel(px, py);
 
                         let alpha = mask_value as f32 / 255.0;
                         let one_minus_alpha = 1.0 - alpha;
 
-                        let base_r = row[x * 4];
-                        let base_g = row[x * 4 + 1];
-                        let base_b = row[x * 4 + 2];
+                        let mut base_pixel = composited_rgba.get_pixel(x, y).clone();
+                        base_pixel[0] = patch_pixel[0] * alpha + base_pixel[0] * one_minus_alpha;
+                        base_pixel[1] = patch_pixel[1] * alpha + base_pixel[1] * one_minus_alpha;
+                        base_pixel[2] = patch_pixel[2] * alpha + base_pixel[2] * one_minus_alpha;
 
-                        row[x * 4] = patch_pixel[0] * alpha + base_r * one_minus_alpha;
-                        row[x * 4 + 1] = patch_pixel[1] * alpha + base_g * one_minus_alpha;
-                        row[x * 4 + 2] = patch_pixel[2] * alpha + base_b * one_minus_alpha;
+                        composited_rgba.put_pixel(x, y, base_pixel);
                     }
                 }
-            });
+            }
+        } else {
+            composited_rgba
+                .par_chunks_mut((base_w * 4) as usize)
+                .enumerate()
+                .for_each(|(y, row)| {
+                    for x in 0..base_w as usize {
+                        let mask_value = mask_bitmap.get_pixel(x as u32, y as u32)[0];
+
+                        if mask_value > 0 {
+                            let patch_pixel = color_image_f32.get_pixel(x as u32, y as u32);
+
+                            let alpha = mask_value as f32 / 255.0;
+                            let one_minus_alpha = 1.0 - alpha;
+
+                            let base_r = row[x * 4];
+                            let base_g = row[x * 4 + 1];
+                            let base_b = row[x * 4 + 2];
+
+                            row[x * 4] = patch_pixel[0] * alpha + base_r * one_minus_alpha;
+                            row[x * 4 + 1] = patch_pixel[1] * alpha + base_g * one_minus_alpha;
+                            row[x * 4 + 2] = patch_pixel[2] * alpha + base_b * one_minus_alpha;
+                        }
+                    }
+                });
+        }
     }
 
     Ok(DynamicImage::ImageRgba32F(composited_rgba))
