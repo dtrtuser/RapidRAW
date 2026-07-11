@@ -589,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "{{name}}을(를) 현재 마스크에 추가하거나 새로 만들기 (우클릭)",
         "createNew": "새 {{name}} 마스크 만들기",
+        "selectNewSourcePoint": "{{modifier}} + 클릭하여 새 소스 포인트 선택",
         "showMore": "더 많은 마스크 유형 표시"
       }
     },

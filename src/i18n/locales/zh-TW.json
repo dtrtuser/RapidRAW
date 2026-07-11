@@ -589,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "將 {{name}} 新增到當前遮色片或建立新遮色片（右鍵單擊）",
         "createNew": "建立新 {{name}} 遮色片",
+        "selectNewSourcePoint": "{{modifier}} + 點擊選擇新的來源點",
         "showMore": "顯示更多遮色片型別"
       }
     },

@@ -8,6 +8,8 @@ import { Adjustments, AiPatch, Coord, MaskContainer } from '../../../utils/adjus
 import { Mask, SubMask, SubMaskMode, ToolType } from '../right/Masks';
 import { AppSettings, BrushSettings, SelectedImage } from '../../ui/AppProperties';
 import { RenderSize } from '../../../hooks/useImageRenderSize';
+import { useOsPlatform } from '../../../hooks/useOsPlatform';
+import { useTranslation } from 'react-i18next';
 import type { OverlayMode } from '../right/CropPanel';
 import CompositionOverlays from './overlays/CompositionOverlays';
 
@@ -131,6 +133,60 @@ const OptimizedBrushLine = memo(
         perfectDrawEnabled={false}
         shadowForStrokeEnabled={false}
       />
+    );
+  },
+);
+
+const SourcePreviewLine = memo(
+  ({
+    line,
+    scale,
+    cropX,
+    cropY,
+    dx,
+    dy,
+  }: {
+    line: DrawnLine;
+    scale: number;
+    cropX: number;
+    cropY: number;
+    dx: number;
+    dy: number;
+  }) => {
+    const flattenedPoints = useMemo(() => {
+      const pts = new Float32Array(line.points.length * 2);
+      for (let i = 0; i < line.points.length; i++) {
+        pts[i * 2] = (line.points[i].x + dx - cropX) * scale;
+        pts[i * 2 + 1] = (line.points[i].y + dy - cropY) * scale;
+      }
+      return Array.from(pts);
+    }, [line.points, scale, cropX, cropY, dx, dy]);
+
+    return (
+      <Group>
+        <Line
+          lineCap="round"
+          lineJoin="round"
+          points={flattenedPoints}
+          stroke="rgba(255, 255, 255, 0.15)"
+          strokeWidth={line.brushSize * scale}
+          strokeScaleEnabled={false}
+          perfectDrawEnabled={false}
+          shadowForStrokeEnabled={false}
+        />
+        <Line
+          lineCap="round"
+          lineJoin="round"
+          points={flattenedPoints}
+          stroke="white"
+          strokeWidth={1.5}
+          dash={[4, 4]}
+          opacity={0.8}
+          strokeScaleEnabled={false}
+          perfectDrawEnabled={false}
+          shadowForStrokeEnabled={false}
+        />
+      </Group>
     );
   },
 );
@@ -643,6 +699,38 @@ const MaskOverlay = memo(
       subMask.type === Mask.Heal
     ) {
       const { lines = [], sourceX, sourceY } = p;
+
+      let dx = 0;
+      let dy = 0;
+      let hasSource = false;
+
+      if (
+        (subMask.type === Mask.Clone || subMask.type === Mask.Heal) &&
+        sourceX !== undefined &&
+        sourceY !== undefined &&
+        lines.length > 0
+      ) {
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity;
+        for (const line of lines) {
+          for (const pt of line.points) {
+            if (pt.x < minX) minX = pt.x;
+            if (pt.x > maxX) maxX = pt.x;
+            if (pt.y < minY) minY = pt.y;
+            if (pt.y > maxY) maxY = pt.y;
+          }
+        }
+        if (minX !== Infinity) {
+          const cx = (minX + maxX) / 2;
+          const cy = (minY + maxY) / 2;
+          dx = sourceX - cx;
+          dy = sourceY - cy;
+          hasSource = true;
+        }
+      }
+
       return (
         <Group
           onClick={handleSelect}
@@ -654,6 +742,20 @@ const MaskOverlay = memo(
             {lines.map((line: DrawnLine, i: number) => (
               <OptimizedBrushLine key={i} line={line} scale={scale} cropX={cropX} cropY={cropY} />
             ))}
+
+            {hasSource &&
+              isSelected &&
+              lines.map((line: DrawnLine, i: number) => (
+                <SourcePreviewLine
+                  key={`source-${i}`}
+                  line={line}
+                  scale={scale}
+                  cropX={cropX}
+                  cropY={cropY}
+                  dx={dx}
+                  dy={dy}
+                />
+              ))}
           </Group>
 
           {sourceX !== undefined && sourceY !== undefined && isSelected && (
@@ -1116,6 +1218,9 @@ const ImageCanvas = memo(
     const retainedPatchRef = useRef<typeof interactivePatch>(null);
 
     const isWgpuActive = appSettings?.useWgpuRenderer !== false && selectedImage?.isReady && hasRenderedFirstFrame;
+    const { t } = useTranslation();
+    const osPlatform = useOsPlatform();
+    const modifierKey = osPlatform === 'macos' ? 'Cmd' : 'Ctrl';
 
     const manualCleanupStateRef = useRef({
       inFlight: false,
@@ -1489,12 +1594,26 @@ const ImageCanvas = memo(
             }
             if (minX === Infinity) return;
 
+            const drawingCenterX = (minX + maxX) / 2;
+            const drawingCenterY = (minY + maxY) / 2;
+
+            const sourceX = sm.parameters?.sourceX;
+            const sourceY = sm.parameters?.sourceY;
+
+            let cx = drawingCenterX;
+            let cy = drawingCenterY;
+
+            if (sourceX !== undefined && sourceY !== undefined) {
+              cx = (drawingCenterX + sourceX) / 2;
+              cy = (drawingCenterY + sourceY) / 2;
+            }
+
             markers.push({
               id: sm.id,
               containerId: container.id,
               type: sm.type,
-              cx: (minX + maxX) / 2,
-              cy: (minY + maxY) / 2,
+              cx,
+              cy,
               isAi,
             });
           });
@@ -2679,6 +2798,27 @@ const ImageCanvas = memo(
                     </div>
                   );
                 })}
+
+              {!isDrawing.current &&
+                activeSubMask &&
+                (activeSubMask.type === Mask.Clone || activeSubMask.type === Mask.Heal) &&
+                activeSubMask.parameters?.sourceX !== undefined &&
+                activeSubMask.parameters?.sourceY !== undefined && (
+                  <div
+                    className="absolute pointer-events-auto rounded-full"
+                    style={{
+                      left:
+                        (activeSubMask.parameters.sourceX - cropX) * imageRenderSize.scale + imageRenderSize.offsetX,
+                      top: (activeSubMask.parameters.sourceY - cropY) * imageRenderSize.scale + imageRenderSize.offsetY,
+                      width: 32,
+                      height: 32,
+                      transform: `translate(-50%, -50%) scale(${1 / maxSafeScale})`,
+                      transformOrigin: 'center',
+                      cursor: 'crosshair',
+                    }}
+                    data-tooltip={t('editor.masks.tooltips.selectNewSourcePoint', { modifier: modifierKey })}
+                  />
+                )}
             </div>
           </div>
 

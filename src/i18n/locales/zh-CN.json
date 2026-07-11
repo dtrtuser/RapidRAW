@@ -589,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "将 {{name}} 添加到当前蒙版或创建新蒙版（右键单击）",
         "createNew": "创建新 {{name}} 蒙版",
+        "selectNewSourcePoint": "{{modifier}} + 点击选择新的源点",
         "showMore": "显示更多蒙版类型"
       }
     },

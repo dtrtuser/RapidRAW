@@ -589,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "Ajouter {{name}} au masque actuel ou en créer un nouveau (Clic-droit)",
         "createNew": "Créer un nouveau masque {{name}}",
+        "selectNewSourcePoint": "{{modifier}} + Clic pour sélectionner un nouveau point source",
         "showMore": "Afficher plus de types de masques"
       }
     },

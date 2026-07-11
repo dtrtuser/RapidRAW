@@ -589,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "Adicionar {{name}} à Máscara Atual ou Criar Nova (Botão Direito)",
         "createNew": "Criar Nova Máscara de {{name}}",
+        "selectNewSourcePoint": "{{modifier}} + Clique para selecionar um novo ponto de origem",
         "showMore": "Mostrar Mais Tipos de Máscara"
       }
     },

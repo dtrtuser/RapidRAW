@@ -116,8 +116,11 @@ pub async fn generate_manual_cleanup_patch(
         }
     }
 
-    let offset_x = source_point.0.round() as i32 - min_x as i32;
-    let offset_y = source_point.1.round() as i32 - min_y as i32;
+    let center_x = (min_x + max_x) as f64 / 2.0;
+    let center_y = (min_y + max_y) as f64 / 2.0;
+
+    let offset_x = (source_point.0 - center_x).round() as i32;
+    let offset_y = (source_point.1 - center_y).round() as i32;
 
     let min_x_u32 = min_x as u32;
     let min_y_u32 = min_y as u32;
