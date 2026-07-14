@@ -4,6 +4,7 @@ use image_hasher::{HashAlg, HasherConfig};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tauri::{AppHandle, Emitter};
@@ -127,6 +128,11 @@ fn analyze_image(
     settings: &crate::app_settings::AppSettings,
 ) -> Result<ImageAnalysisData, String> {
     const ANALYSIS_DIM: u32 = 720; // FIXME: How should we calculate good focus if it's downscaled?!?
+
+    if crate::file_management::is_cloud_placeholder(Path::new(path)) {
+        return Err(format!("'{}' is stored in iCloud and not downloaded", path));
+    }
+
     let file_bytes = std::fs::read(path).map_err(|e| e.to_string())?;
 
     let img = image_loader::load_base_image_from_bytes(&file_bytes, path, true, settings, None)

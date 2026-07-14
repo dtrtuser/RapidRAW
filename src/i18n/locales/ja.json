@@ -352,7 +352,9 @@
       "dropzoneText": "ここにドロップして新しい編集を作成",
       "editSettingsTitle": "編集設定",
       "editsTitle": "編集一覧",
+      "generativeEditTitle": "生成編集",
       "inpaintingTitle": "インペインティング",
+      "manualCleanupTitle": "手動クリーンアップ",
       "noImageSelected": "画像が選択されていません。",
       "params": {
         "feather": "ぼかし",
@@ -362,6 +364,8 @@
         "aiEdit": "AI編集 {{count}}",
         "aiEdit_one": "AI編集 {{count}}",
         "aiEdit_other": "AI編集 {{count}}",
+        "clone": "クローン {{count}}",
+        "heal": "修復 {{count}}",
         "invertedName": "{{name}} 反転",
         "quickErase": "クイック消去 {{count}}",
         "quickErase_one": "クイック消去 {{count}}",
@@ -585,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "{{name}}を現在のマスクに追加、または新規作成 (右クリック)",
         "createNew": "新規の {{name}} マスクを作成",
+        "selectNewSourcePoint": "{{modifier}} + クリックで新しいソースポイントを選択",
         "showMore": "他のマスクタイプを表示"
       }
     },
@@ -929,6 +934,7 @@
       "progress": "インポート中... ({{current}}/{{total}})"
     },
     "items": {
+      "cloudPlaceholder": "iCloudに保存されています — 未ダウンロード",
       "collapseFolder": "フォルダを折りたたむ",
       "currentFolder": "現在のフォルダ",
       "expandFolder": "フォルダを展開",
@@ -1003,10 +1009,12 @@
     "types": {
       "all": "画像全体",
       "brush": "ブラシ",
+      "clone": "クローン",
       "color": "カラー",
       "depth": "奥行き",
       "flow": "流量",
       "foreground": "手前",
+      "heal": "修復",
       "linear": "線形",
       "luminance": "ルミナンス",
       "others": "その他",

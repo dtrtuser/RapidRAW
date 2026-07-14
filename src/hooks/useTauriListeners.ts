@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { Status } from '../components/ui/ExportImportProperties';
 import { useProcessStore } from '../store/useProcessStore';
 import { useEditorStore } from '../store/useEditorStore';
@@ -100,9 +101,12 @@ export function useTauriListeners({
       }),
       listen('thumbnail-generated', (event: any) => {
         if (!isEffectActive) return;
-        const { path, data, rating, is_edited } = event.payload;
+        const { path, thumbnailPath, rating, is_edited, data } = event.payload;
 
-        if (data) {
+        if (thumbnailPath) {
+          thumbnailBuffer.current[path] = convertFileSrc(thumbnailPath);
+          refs.current.markGenerated(path);
+        } else if (data) {
           thumbnailBuffer.current[path] = data;
           refs.current.markGenerated(path);
         }
@@ -112,9 +116,20 @@ export function useTauriListeners({
         if (is_edited !== undefined) {
           editStatusBuffer.current[path] = is_edited;
         }
-        if (data || rating !== undefined || is_edited !== undefined) {
+        if (thumbnailPath || data || rating !== undefined || is_edited !== undefined) {
           scheduleFlush();
         }
+      }),
+      listen('image-metadata-loaded', (event: any) => {
+        if (!isEffectActive) return;
+        const { path, rating, is_edited, tags } = event.payload;
+
+        useLibraryStore.getState().setLibrary((state) => ({
+          imageRatings: { ...state.imageRatings, [path]: rating },
+          imageList: state.imageList.map((img) =>
+            img.path === path ? { ...img, is_edited, tags: tags ?? img.tags } : img,
+          ),
+        }));
       }),
       listen('ai-model-download-start', (event: any) => {
         if (isEffectActive) useProcessStore.getState().setProcess({ aiModelDownloadStatus: event.payload });

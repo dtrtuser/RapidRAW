@@ -253,6 +253,7 @@ export interface ImageFile {
   tags: Array<string> | null;
   exif: { [key: string]: string } | null;
   is_virtual_copy: boolean;
+  is_cloud_placeholder: boolean;
 }
 
 export interface Option {

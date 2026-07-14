@@ -5,69 +5,152 @@ LOCALES_DIR = Path("./locales")
 
 TRANSLATIONS = {
     "de": {
-        "done": "Fertig",
-        "exporting": "Exportieren…",
-        "savesTo": "Externe Bearbeitung — speichert in"
+        "masks": {
+            "clone": "Klonen",
+            "heal": "Reparieren"
+        },
+        "ai": {
+            "manualCleanupTitle": "Manuelle Bereinigung",
+            "generativeEditTitle": "Generative Bearbeitung",
+            "patches_clone": "Klonen {{count}}",
+            "patches_heal": "Reparieren {{count}}"
+        }
     },
     "en": {
-        "done": "Done",
-        "exporting": "Exporting…",
-        "savesTo": "External edit — saves to"
+        "masks": {
+            "clone": "Clone",
+            "heal": "Heal"
+        },
+        "ai": {
+            "manualCleanupTitle": "Manual Cleanup",
+            "generativeEditTitle": "Generative Edit",
+            "patches_clone": "Clone {{count}}",
+            "patches_heal": "Heal {{count}}"
+        }
     },
     "es": {
-        "done": "Listo",
-        "exporting": "Exportando…",
-        "savesTo": "Edición externa: se guarda en"
+        "masks": {
+            "clone": "Clonar",
+            "heal": "Curar"
+        },
+        "ai": {
+            "manualCleanupTitle": "Limpieza manual",
+            "generativeEditTitle": "Edición generativa",
+            "patches_clone": "Clonar {{count}}",
+            "patches_heal": "Curar {{count}}"
+        }
     },
     "fr": {
-        "done": "Terminé",
-        "exporting": "Exportation…",
-        "savesTo": "Modification externe — s'enregistre dans"
+        "masks": {
+            "clone": "Cloner",
+            "heal": "Corriger"
+        },
+        "ai": {
+            "manualCleanupTitle": "Nettoyage manuel",
+            "generativeEditTitle": "Édition générative",
+            "patches_clone": "Cloner {{count}}",
+            "patches_heal": "Corriger {{count}}"
+        }
     },
     "it": {
-        "done": "Fatto",
-        "exporting": "Esportazione…",
-        "savesTo": "Modifica esterna — salva in"
+        "masks": {
+            "clone": "Clona",
+            "heal": "Ripara"
+        },
+        "ai": {
+            "manualCleanupTitle": "Pulizia manuale",
+            "generativeEditTitle": "Modifica generativa",
+            "patches_clone": "Clona {{count}}",
+            "patches_heal": "Ripara {{count}}"
+        }
     },
     "ja": {
-        "done": "完了",
-        "exporting": "書き出し中…",
-        "savesTo": "外部編集 — 保存先"
+        "masks": {
+            "clone": "クローン",
+            "heal": "修復"
+        },
+        "ai": {
+            "manualCleanupTitle": "手動クリーンアップ",
+            "generativeEditTitle": "生成編集",
+            "patches_clone": "クローン {{count}}",
+            "patches_heal": "修復 {{count}}"
+        }
     },
     "ko": {
-        "done": "완료",
-        "exporting": "내보내는 중…",
-        "savesTo": "외부 편집 — 저장 위치:"
+        "masks": {
+            "clone": "복제",
+            "heal": "복구"
+        },
+        "ai": {
+            "manualCleanupTitle": "수동 정리",
+            "generativeEditTitle": "생성형 편집",
+            "patches_clone": "복제 {{count}}",
+            "patches_heal": "복구 {{count}}"
+        }
     },
     "pl": {
-        "done": "Gotowe",
-        "exporting": "Eksportowanie…",
-        "savesTo": "Zewnętrzna edycja — zapisuje do"
+        "masks": {
+            "clone": "Klonowanie",
+            "heal": "Naprawianie"
+        },
+        "ai": {
+            "manualCleanupTitle": "Ręczne czyszczenie",
+            "generativeEditTitle": "Edycja generatywna",
+            "patches_clone": "Klonowanie {{count}}",
+            "patches_heal": "Naprawianie {{count}}"
+        }
     },
     "pt": {
-        "done": "Concluído",
-        "exporting": "Exportando…",
-        "savesTo": "Edição externa — salva em"
+        "masks": {
+            "clone": "Clonar",
+            "heal": "Restaurar"
+        },
+        "ai": {
+            "manualCleanupTitle": "Limpeza Manual",
+            "generativeEditTitle": "Edição Generativa",
+            "patches_clone": "Clonar {{count}}",
+            "patches_heal": "Restaurar {{count}}"
+        }
     },
     "ru": {
-        "done": "Готово",
-        "exporting": "Экспорт…",
-        "savesTo": "Внешнее редактирование — сохраняется в"
+        "masks": {
+            "clone": "Штамп",
+            "heal": "Восстановление"
+        },
+        "ai": {
+            "manualCleanupTitle": "Ручная очистка",
+            "generativeEditTitle": "Генеративное редактирование",
+            "patches_clone": "Штамп {{count}}",
+            "patches_heal": "Восстановление {{count}}"
+        }
     },
     "zh-CN": {
-        "done": "完成",
-        "exporting": "正在导出…",
-        "savesTo": "外部编辑 — 保存至"
+        "masks": {
+            "clone": "克隆",
+            "heal": "修复"
+        },
+        "ai": {
+            "manualCleanupTitle": "手动清理",
+            "generativeEditTitle": "生成式编辑",
+            "patches_clone": "克隆 {{count}}",
+            "patches_heal": "修复 {{count}}"
+        }
     },
     "zh-TW": {
-        "done": "完成",
-        "exporting": "正在匯出…",
-        "savesTo": "外部編輯 — 儲存至"
+        "masks": {
+            "clone": "仿製",
+            "heal": "修復"
+        },
+        "ai": {
+            "manualCleanupTitle": "手動清理",
+            "generativeEditTitle": "生成式編輯",
+            "patches_clone": "仿製 {{count}}",
+            "patches_heal": "修復 {{count}}"
+        }
     }
 }
 
 def sort_dict_recursively(item):
-    """Recursively sorts dictionary keys alphabetically."""
     if isinstance(item, dict):
         return {k: sort_dict_recursively(v) for k, v in sorted(item.items())}
     elif isinstance(item, list):
@@ -86,18 +169,23 @@ def update_json_file(file_path: Path, trans: dict):
         print(f"Error parsing JSON in {file_path.name}. Skipping.")
         return
 
-    # Ensure the path data -> editor -> externalEdit exists
-    if "editor" not in data or not isinstance(data["editor"], dict):
-        data["editor"] = {}
-    if "externalEdit" not in data["editor"] or not isinstance(data["editor"]["externalEdit"], dict):
-        data["editor"]["externalEdit"] = {}
+    # masks -> types -> clone / heal
+    masks_node = data.setdefault("masks", {})
+    types_node = masks_node.setdefault("types", {})
+    types_node["clone"] = trans["masks"]["clone"]
+    types_node["heal"] = trans["masks"]["heal"]
 
-    ext_node = data["editor"]["externalEdit"]
-    ext_node["done"] = trans["done"]
-    ext_node["exporting"] = trans["exporting"]
-    ext_node["savesTo"] = trans["savesTo"]
+    # editor -> ai -> title translations
+    editor_node = data.setdefault("editor", {})
+    ai_node = editor_node.setdefault("ai", {})
+    ai_node["manualCleanupTitle"] = trans["ai"]["manualCleanupTitle"]
+    ai_node["generativeEditTitle"] = trans["ai"]["generativeEditTitle"]
 
-    # Sort keys alphabetically and write out
+    # editor -> ai -> patches -> clone / heal
+    patches_node = ai_node.setdefault("patches", {})
+    patches_node["clone"] = trans["ai"]["patches_clone"]
+    patches_node["heal"] = trans["ai"]["patches_heal"]
+
     sorted_data = sort_dict_recursively(data)
 
     with open(file_path, "w", encoding="utf-8") as f:

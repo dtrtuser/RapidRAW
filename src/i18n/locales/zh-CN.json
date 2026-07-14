@@ -352,7 +352,9 @@
       "dropzoneText": "拖放到此处以创建新编辑",
       "editSettingsTitle": "编辑设置",
       "editsTitle": "编辑",
+      "generativeEditTitle": "生成式编辑",
       "inpaintingTitle": "图像修复",
+      "manualCleanupTitle": "手动清理",
       "noImageSelected": "未选择图像。",
       "params": {
         "feather": "羽化",
@@ -362,6 +364,8 @@
         "aiEdit": "AI 编辑 {{count}}",
         "aiEdit_one": "AI 编辑 {{count}}",
         "aiEdit_other": "AI 编辑 {{count}}",
+        "clone": "克隆 {{count}}",
+        "heal": "修复 {{count}}",
         "invertedName": "{{name}} 反转",
         "quickErase": "快速擦除 {{count}}",
         "quickErase_one": "快速擦除 {{count}}",
@@ -585,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "将 {{name}} 添加到当前蒙版或创建新蒙版（右键单击）",
         "createNew": "创建新 {{name}} 蒙版",
+        "selectNewSourcePoint": "{{modifier}} + 点击选择新的源点",
         "showMore": "显示更多蒙版类型"
       }
     },
@@ -930,6 +935,7 @@
       "progress": "导入中...（{{current}}/{{total}}）"
     },
     "items": {
+      "cloudPlaceholder": "存储在 iCloud 中 — 未下载",
       "collapseFolder": "折叠文件夹",
       "currentFolder": "当前文件夹",
       "expandFolder": "展开文件夹",
@@ -1004,10 +1010,12 @@
     "types": {
       "all": "整个图像",
       "brush": "画笔",
+      "clone": "克隆",
       "color": "颜色",
       "depth": "深度",
       "flow": "流线",
       "foreground": "前景",
+      "heal": "修复",
       "linear": "线性",
       "luminance": "亮度",
       "others": "其他",

@@ -352,7 +352,9 @@
       "dropzoneText": "여기에 놓아 새 편집을 만드세요",
       "editSettingsTitle": "편집 설정",
       "editsTitle": "편집",
+      "generativeEditTitle": "생성형 편집",
       "inpaintingTitle": "인페인팅",
+      "manualCleanupTitle": "수동 정리",
       "noImageSelected": "선택된 이미지가 없습니다.",
       "params": {
         "feather": "페더",
@@ -362,6 +364,8 @@
         "aiEdit": "AI 편집 {{count}}",
         "aiEdit_one": "AI 편집 {{count}}",
         "aiEdit_other": "AI 편집 {{count}}",
+        "clone": "복제 {{count}}",
+        "heal": "복구 {{count}}",
         "invertedName": "{{name}} 반전됨",
         "quickErase": "빠른 지우기 {{count}}",
         "quickErase_one": "빠른 지우기 {{count}}",
@@ -585,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "{{name}}을(를) 현재 마스크에 추가하거나 새로 만들기 (우클릭)",
         "createNew": "새 {{name}} 마스크 만들기",
+        "selectNewSourcePoint": "{{modifier}} + 클릭하여 새 소스 포인트 선택",
         "showMore": "더 많은 마스크 유형 표시"
       }
     },
@@ -930,6 +935,7 @@
       "progress": "가져오는 중... ({{current}}/{{total}})"
     },
     "items": {
+      "cloudPlaceholder": "iCloud에 저장됨 — 다운로드되지 않음",
       "collapseFolder": "폴더 접기",
       "currentFolder": "현재 폴더",
       "expandFolder": "폴더 펼치기",
@@ -1004,10 +1010,12 @@
     "types": {
       "all": "전체 이미지",
       "brush": "브러시",
+      "clone": "복제",
       "color": "색상",
       "depth": "심도",
       "flow": "플로우",
       "foreground": "전경",
+      "heal": "복구",
       "linear": "선형",
       "luminance": "휘도",
       "others": "기타",

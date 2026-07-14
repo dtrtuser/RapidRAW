@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Image as ImageIcon, Folder, FolderOpen, Star as StarIcon, SlidersHorizontal } from 'lucide-react';
+import { Image as ImageIcon, Folder, FolderOpen, Star as StarIcon, SlidersHorizontal, CloudOff } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { COLOR_LABELS, Color } from '../../../utils/adjustments';
@@ -30,6 +30,7 @@ const ThumbnailComponent = ({
   aspectRatio: thumbnailAspectRatio,
   isEdited,
   exif,
+  isCloudPlaceholder,
 }: any) => {
   const { t } = useTranslation();
   const data = useProcessStore((s) => s.thumbnails[path]);
@@ -180,9 +181,27 @@ const ThumbnailComponent = ({
           </div>
         )}
 
-        {layers.length === 0 && showPlaceholder && (
-          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-surface">
-            <ImageIcon className="text-text-secondary animate-pulse" />
+        {layers.length === 0 &&
+          showPlaceholder &&
+          (isCloudPlaceholder ? (
+            <div
+              className="absolute inset-0 w-full h-full flex items-center justify-center bg-surface"
+              data-tooltip={t('library.items.cloudPlaceholder')}
+            >
+              <CloudOff className="text-text-secondary" />
+            </div>
+          ) : (
+            <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-surface">
+              <ImageIcon className="text-text-secondary animate-pulse" />
+            </div>
+          ))}
+
+        {isCloudPlaceholder && layers.length > 0 && (
+          <div
+            className="absolute top-1.5 left-1.5 z-10 rounded-full h-5 w-5 flex items-center justify-center bg-black/40 shadow-md pointer-events-none"
+            data-tooltip={t('library.items.cloudPlaceholder')}
+          >
+            <CloudOff size={12} className="text-white" />
           </div>
         )}
       </div>
@@ -411,6 +430,7 @@ const ListItemComponent = ({
   aspectRatio: thumbnailAspectRatio,
   columnWidths,
   exif,
+  isCloudPlaceholder,
 }: any) => {
   const { t } = useTranslation();
   const data = useProcessStore((s) => s.thumbnails[path]);
@@ -568,9 +588,27 @@ const ListItemComponent = ({
             </div>
           )}
 
-          {layers.length === 0 && showPlaceholder && (
-            <div className="absolute inset-0 w-full h-full flex items-center justify-center">
-              <ImageIcon size={14} className="text-text-secondary animate-pulse" />
+          {layers.length === 0 &&
+            showPlaceholder &&
+            (isCloudPlaceholder ? (
+              <div
+                className="absolute inset-0 w-full h-full flex items-center justify-center"
+                data-tooltip={t('library.items.cloudPlaceholder')}
+              >
+                <CloudOff size={14} className="text-text-secondary" />
+              </div>
+            ) : (
+              <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+                <ImageIcon size={14} className="text-text-secondary animate-pulse" />
+              </div>
+            ))}
+
+          {isCloudPlaceholder && layers.length > 0 && (
+            <div
+              className="absolute top-0.5 left-0.5 z-10 rounded-full h-3.5 w-3.5 flex items-center justify-center bg-black/40 pointer-events-none"
+              data-tooltip={t('library.items.cloudPlaceholder')}
+            >
+              <CloudOff size={9} className="text-white" />
             </div>
           )}
         </div>
@@ -684,11 +722,20 @@ const RowComponent = ({
   const row = rows[index];
 
   useEffect(() => {
-    if (row && row.type === 'images') {
-      row.images.forEach((img: ImageFile) => {
-        queueThumbnailRequest(img.path);
-      });
-    }
+    if (!row || row.type !== 'images') return;
+
+    row.images.forEach((img: ImageFile) => {
+      queueThumbnailRequest(img.path);
+    });
+
+    const cloudPaths = row.images.filter((img: ImageFile) => img.is_cloud_placeholder).map((img: ImageFile) => img.path);
+    if (cloudPaths.length === 0) return;
+
+    const interval = setInterval(() => {
+      cloudPaths.forEach((path: string) => queueThumbnailRequest(path));
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [row, queueThumbnailRequest]);
 
   if (row.type === 'footer') return null;
@@ -779,6 +826,7 @@ const RowComponent = ({
               aspectRatio={thumbnailAspectRatio}
               modified={imageFile.modified}
               columnWidths={columnWidths}
+              isCloudPlaceholder={imageFile.is_cloud_placeholder}
             />
           ) : (
             <Thumbnail
@@ -794,6 +842,7 @@ const RowComponent = ({
               exif={imageFile.exif}
               isEdited={imageFile.is_edited}
               aspectRatio={thumbnailAspectRatio}
+              isCloudPlaceholder={imageFile.is_cloud_placeholder}
             />
           )}
         </div>

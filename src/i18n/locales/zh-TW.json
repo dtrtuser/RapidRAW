@@ -352,7 +352,9 @@
       "dropzoneText": "拖放到此處以建立新編輯",
       "editSettingsTitle": "編輯設定",
       "editsTitle": "編輯",
+      "generativeEditTitle": "生成式編輯",
       "inpaintingTitle": "影像修復",
+      "manualCleanupTitle": "手動清理",
       "noImageSelected": "未選擇影像。",
       "params": {
         "feather": "羽化",
@@ -362,6 +364,8 @@
         "aiEdit": "AI 編輯 {{count}}",
         "aiEdit_one": "AI 編輯 {{count}}",
         "aiEdit_other": "AI 編輯 {{count}}",
+        "clone": "仿製 {{count}}",
+        "heal": "修復 {{count}}",
         "invertedName": "{{name}} 反轉",
         "quickErase": "快速擦除 {{count}}",
         "quickErase_one": "快速擦除 {{count}}",
@@ -585,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "將 {{name}} 新增到當前遮色片或建立新遮色片（右鍵單擊）",
         "createNew": "建立新 {{name}} 遮色片",
+        "selectNewSourcePoint": "{{modifier}} + 點擊選擇新的來源點",
         "showMore": "顯示更多遮色片型別"
       }
     },
@@ -930,6 +935,7 @@
       "progress": "匯入中...（{{current}}/{{total}}）"
     },
     "items": {
+      "cloudPlaceholder": "儲存在 iCloud 中 — 未下載",
       "collapseFolder": "摺疊資料夾",
       "currentFolder": "當前資料夾",
       "expandFolder": "展開資料夾",
@@ -1004,10 +1010,12 @@
     "types": {
       "all": "整個影像",
       "brush": "畫筆",
+      "clone": "仿製",
       "color": "顏色",
       "depth": "深度",
       "flow": "流線",
       "foreground": "前景",
+      "heal": "修復",
       "linear": "線性",
       "luminance": "亮度",
       "others": "其他",

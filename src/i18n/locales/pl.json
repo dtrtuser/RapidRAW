@@ -384,7 +384,9 @@
       "dropzoneText": "Upuść tutaj, aby utworzyć nową edycję",
       "editSettingsTitle": "Ustawienia edycji",
       "editsTitle": "Edycje",
+      "generativeEditTitle": "Edycja generatywna",
       "inpaintingTitle": "Inpainting",
+      "manualCleanupTitle": "Ręczne czyszczenie",
       "noImageSelected": "Brak zaznaczonego obrazu.",
       "params": {
         "feather": "Wtapianie",
@@ -396,6 +398,8 @@
         "aiEdit_many": "Edycji AI {{count}}",
         "aiEdit_one": "Edycja AI {{count}}",
         "aiEdit_other": "Edycja AI {{count}}",
+        "clone": "Klonowanie {{count}}",
+        "heal": "Naprawianie {{count}}",
         "invertedName": "{{name}} odwrócone",
         "quickErase": "Szybkie wymazanie {{count}}",
         "quickErase_few": "Szybkie wymazania {{count}}",
@@ -623,6 +627,7 @@
       "tooltips": {
         "addToCurrent": "Dodaj {{name}} do bieżącej maski lub utwórz nową (Prawy przycisk)",
         "createNew": "Utwórz nową maskę {{name}}",
+        "selectNewSourcePoint": "{{modifier}} + Kliknij, aby wybrać nowy punkt źródłowy",
         "showMore": "Pokaż więcej typów masek"
       }
     },
@@ -972,6 +977,7 @@
       "progress": "Importowanie... ({{current}}/{{total}})"
     },
     "items": {
+      "cloudPlaceholder": "Przechowywane w iCloud — niepobrane",
       "collapseFolder": "Zwiń folder",
       "currentFolder": "Bieżący folder",
       "expandFolder": "Rozwiń folder",
@@ -1048,10 +1054,12 @@
     "types": {
       "all": "Cały obraz",
       "brush": "Pędzel",
+      "clone": "Klonowanie",
       "color": "Kolor",
       "depth": "Głębia",
       "flow": "Przepływ",
       "foreground": "Pierwszy plan",
+      "heal": "Naprawianie",
       "linear": "Liniowy",
       "luminance": "Luminancja",
       "others": "Inne",

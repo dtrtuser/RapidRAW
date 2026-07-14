@@ -352,7 +352,9 @@
       "dropzoneText": "Drop here to create a new edit",
       "editSettingsTitle": "Edit Settings",
       "editsTitle": "Edits",
+      "generativeEditTitle": "Generative Edit",
       "inpaintingTitle": "Inpainting",
+      "manualCleanupTitle": "Manual Cleanup",
       "noImageSelected": "No image selected.",
       "params": {
         "feather": "Feather",
@@ -362,6 +364,8 @@
         "aiEdit": "AI Edit {{count}}",
         "aiEdit_one": "AI Edit {{count}}",
         "aiEdit_other": "AI Edit {{count}}",
+        "clone": "Clone {{count}}",
+        "heal": "Heal {{count}}",
         "invertedName": "{{name}} Inverted",
         "quickErase": "Quick Erase {{count}}",
         "quickErase_one": "Quick Erase {{count}}",
@@ -585,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "Add {{name}} to Current Mask or Create New (Right-click)",
         "createNew": "Create New {{name}} Mask",
+        "selectNewSourcePoint": "{{modifier}} + Click to select a new source point",
         "showMore": "Show More Mask Types"
       }
     },
@@ -930,6 +935,7 @@
       "progress": "Importing... ({{current}}/{{total}})"
     },
     "items": {
+      "cloudPlaceholder": "Stored in iCloud — not downloaded",
       "collapseFolder": "Collapse Folder",
       "currentFolder": "Current Folder",
       "expandFolder": "Expand Folder",
@@ -1004,10 +1010,12 @@
     "types": {
       "all": "Whole Image",
       "brush": "Brush",
+      "clone": "Clone",
       "color": "Color",
       "depth": "Depth",
       "flow": "Flow",
       "foreground": "Foreground",
+      "heal": "Heal",
       "linear": "Linear",
       "luminance": "Luminance",
       "others": "Others",

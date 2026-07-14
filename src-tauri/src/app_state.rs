@@ -113,6 +113,28 @@ impl ThumbnailManager {
     }
 }
 
+pub struct PendingMetadata {
+    pub virtual_path: String,
+    pub image_path: PathBuf,
+    pub sidecar_path: PathBuf,
+}
+
+pub struct MetadataManager {
+    pub queue: Mutex<VecDeque<PendingMetadata>>,
+    pub cvar: Condvar,
+    pub pending: Mutex<HashSet<PathBuf>>,
+}
+
+impl MetadataManager {
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self {
+            queue: Mutex::new(VecDeque::new()),
+            cvar: Condvar::new(),
+            pending: Mutex::new(HashSet::new()),
+        })
+    }
+}
+
 pub type TransformedImageCache = (u64, Arc<DynamicImage>, (f32, f32));
 
 pub struct AppState {
@@ -147,4 +169,5 @@ pub struct AppState {
     pub full_transformed_cache: Mutex<Option<TransformedImageCache>>,
     pub decoded_image_cache: Mutex<DecodedImageCache>,
     pub thumbnail_manager: Arc<ThumbnailManager>,
+    pub metadata_manager: Arc<MetadataManager>,
 }

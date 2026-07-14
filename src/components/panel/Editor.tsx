@@ -132,7 +132,9 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
     },
     [debouncedSetHistory, setEditor],
   );
-  const { handleGenerateAiMask, handleQuickErase } = useAiMasking();
+
+  const { handleGenerateAiMask, handleQuickErase, handleManualCleanup } = useAiMasking();
+
   const [crop, setCrop] = useState<Crop | null>(null);
   const prevCropParams = useRef<any>(null);
   const lastValidCropRef = useRef<PercentCrop | null>(null);
@@ -607,6 +609,8 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
     (isAiEditing &&
       (activeSubMask?.type === Mask.Brush ||
         activeSubMask?.type === Mask.Flow ||
+        activeSubMask?.type === Mask.Clone ||
+        activeSubMask?.type === Mask.Heal ||
         activeSubMask?.type === Mask.AiSubject ||
         activeSubMask?.type === Mask.QuickEraser ||
         activeSubMask?.type === Mask.Color ||
@@ -1426,6 +1430,7 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
         );
 
         if (
+          maxCropForReference &&
           Math.abs(currentAdjCrop.x - maxCropForReference.x) <= 2 &&
           Math.abs(currentAdjCrop.y - maxCropForReference.y) <= 2 &&
           Math.abs(currentAdjCrop.width - maxCropForReference.width) <= 2 &&
@@ -2020,7 +2025,10 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
             isSliderDragging={isSliderDragging}
             maskOverlayUrl={maskOverlayUrl}
             onGenerateAiMask={handleGenerateAiMask}
+            onSelectAiPatchContainer={(id) => setEditor({ activeAiPatchContainerId: id })}
+            onSelectMaskContainer={(id) => setEditor({ activeMaskContainerId: id })}
             onLiveMaskPreview={handleLiveMaskPreview}
+            onManualCleanup={handleManualCleanup}
             onQuickErase={handleQuickErase}
             onSelectAiSubMask={(id) => setEditor({ activeAiSubMaskId: id })}
             onSelectMask={(id) => setEditor({ activeMaskId: id })}

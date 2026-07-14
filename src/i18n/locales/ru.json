@@ -352,7 +352,9 @@
       "dropzoneText": "Перетащите сюда, чтобы создать новую правку",
       "editSettingsTitle": "Настройки редактирования",
       "editsTitle": "Правки",
+      "generativeEditTitle": "Генеративное редактирование",
       "inpaintingTitle": "Восстановление",
+      "manualCleanupTitle": "Ручная очистка",
       "noImageSelected": "Изображение не выбрано.",
       "params": {
         "feather": "Растушевка",
@@ -362,6 +364,8 @@
         "aiEdit": "ИИ-правка {{count}}",
         "aiEdit_one": "ИИ-правка {{count}}",
         "aiEdit_other": "ИИ-правка {{count}}",
+        "clone": "Штамп {{count}}",
+        "heal": "Восстановление {{count}}",
         "invertedName": "{{name}} (инвертировано)",
         "quickErase": "Быстрое стирание {{count}}",
         "quickErase_one": "Быстрое стирание {{count}}",
@@ -585,6 +589,7 @@
       "tooltips": {
         "addToCurrent": "Добавить {{name}} к текущей маске или создать новую (правый клик)",
         "createNew": "Создать новую маску: {{name}}",
+        "selectNewSourcePoint": "{{modifier}} + Кликните, чтобы выбрать новую исходную точку",
         "showMore": "Показать больше типов масок"
       }
     },
@@ -929,6 +934,7 @@
       "progress": "Импорт... ({{current}}/{{total}})"
     },
     "items": {
+      "cloudPlaceholder": "Хранится в iCloud — не загружено",
       "collapseFolder": "Свернуть папку",
       "currentFolder": "Текущая папка",
       "expandFolder": "Развернуть папку",
@@ -1003,10 +1009,12 @@
     "types": {
       "all": "Изображение целиком",
       "brush": "Кисть",
+      "clone": "Штамп",
       "color": "Цвет",
       "depth": "Глубина",
       "flow": "Поток",
       "foreground": "Передний план",
+      "heal": "Восстановление",
       "linear": "Линейный градиент",
       "luminance": "Яркость",
       "others": "Другие",
