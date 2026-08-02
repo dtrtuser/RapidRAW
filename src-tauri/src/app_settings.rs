@@ -201,6 +201,8 @@ pub struct CopyPasteSettings {
     pub included_adjustments: HashSet<String>,
     #[serde(default)]
     pub known_adjustments: HashSet<String>,
+    #[serde(default)]
+    pub auto_sync: bool,
 }
 
 impl Default for CopyPasteSettings {
@@ -209,6 +211,7 @@ impl Default for CopyPasteSettings {
             mode: PasteMode::Merge,
             included_adjustments: default_included_adjustments(),
             known_adjustments: all_available_adjustments(),
+            auto_sync: false,
         }
     }
 }
@@ -288,6 +291,67 @@ pub fn default_export_presets() -> Vec<ExportPreset> {
             last_export_path: None,
         },
     ]
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceState {
+    pub left_panel_width: u32,
+    pub right_panel_width: u32,
+    pub left_top_height: u32,
+    pub right_top_height: u32,
+    pub panel_layout: HashMap<String, Vec<String>>,
+    pub active_panels: HashMap<String, Option<String>>,
+    pub panel_switcher_placement: HashMap<String, String>,
+}
+
+impl Default for WorkspaceState {
+    fn default() -> Self {
+        let mut panel_layout = HashMap::new();
+        panel_layout.insert(
+            "leftTop".to_string(),
+            vec![
+                "metadata".to_string(),
+                "folderTree".to_string(),
+                "export".to_string(),
+            ],
+        );
+        panel_layout.insert("leftBottom".to_string(), vec![]);
+
+        panel_layout.insert(
+            "rightTop".to_string(),
+            vec![
+                "adjustments".to_string(),
+                "crop".to_string(),
+                "masks".to_string(),
+                "ai".to_string(),
+                "presets".to_string(),
+            ],
+        );
+        panel_layout.insert("rightBottom".to_string(), vec![]);
+
+        let mut active_panels = HashMap::new();
+        active_panels.insert("leftTop".to_string(), Some("folderTree".to_string()));
+        active_panels.insert("leftBottom".to_string(), None);
+        active_panels.insert("rightTop".to_string(), Some("adjustments".to_string()));
+        active_panels.insert("rightBottom".to_string(), None);
+
+        let mut panel_switcher_placement = HashMap::new();
+        panel_switcher_placement.insert("leftTop".to_string(), "bottom".to_string());
+        panel_switcher_placement.insert("leftBottom".to_string(), "bottom".to_string());
+        panel_switcher_placement.insert("rightTop".to_string(), "right".to_string());
+        panel_switcher_placement.insert("rightBottom".to_string(), "right".to_string());
+
+        Self {
+            left_panel_width: 320,
+            right_panel_width: 320,
+            left_top_height: 450,
+            right_top_height: 450,
+            panel_layout,
+            active_panels,
+            panel_switcher_placement,
+        }
+    }
 }
 
 pub fn default_linear_raw_mode() -> String {
@@ -379,6 +443,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub linux_gpu_optimization: Option<bool>,
     #[serde(default)]
+    pub linux_gpu_optimization_migrated_v1: Option<bool>,
+    #[serde(default)]
     pub library_view_mode: Option<String>,
     #[serde(default = "default_export_presets")]
     pub export_presets: Vec<ExportPreset>,
@@ -434,6 +500,24 @@ pub struct AppSettings {
     pub language: Option<String>,
     #[serde(default)]
     pub folder_tree_sort: Option<FolderTreeSort>,
+    #[serde(default)]
+    pub library_display_mode: Option<String>,
+    #[serde(default)]
+    pub grouping: Option<String>,
+    #[serde(default)]
+    pub require_matching_exif: Option<bool>,
+    #[serde(default)]
+    pub group_edited_files: Option<bool>,
+    #[serde(default, skip_serializing)] // legacy
+    #[allow(dead_code)]
+    pub group_associated_files: Option<bool>,
+    #[serde(default, skip_serializing)] // legacy
+    #[allow(dead_code)]
+    pub group_preferred_type: Option<String>,
+    #[serde(default)]
+    pub always_decode_raw_thumbnails: Option<bool>,
+    #[serde(default)]
+    pub workspace: WorkspaceState,
 }
 
 impl Default for AppSettings {
@@ -475,10 +559,8 @@ impl Default for AppSettings {
             copy_paste_settings: CopyPasteSettings::default(),
             raw_highlight_compression: Some(2.5),
             processing_backend: Some("auto".to_string()),
-            #[cfg(target_os = "linux")]
-            linux_gpu_optimization: Some(true),
-            #[cfg(not(target_os = "linux"))]
             linux_gpu_optimization: Some(false),
+            linux_gpu_optimization_migrated_v1: Some(true),
             library_view_mode: Some("flat".to_string()),
             export_presets: default_export_presets(),
             my_lenses: Some(Vec::new()),
@@ -520,6 +602,14 @@ impl Default for AppSettings {
             exif_overlay: Some("off".to_string()),
             language: Some("en".to_string()),
             folder_tree_sort: Some(FolderTreeSort::default()),
+            library_display_mode: Some("grid".to_string()),
+            grouping: Some("off".to_string()),
+            require_matching_exif: Some(false),
+            group_edited_files: Some(true),
+            group_associated_files: Some(false),
+            group_preferred_type: Some("raw".to_string()),
+            always_decode_raw_thumbnails: Some(false),
+            workspace: WorkspaceState::default(),
         }
     }
 }
@@ -556,6 +646,15 @@ pub fn load_settings(app_handle: AppHandle) -> Result<AppSettings, String> {
         && let Some(last) = &settings.last_root_path
     {
         settings.root_folders.push(last.clone());
+        settings_modified = true;
+    }
+
+    #[cfg(target_os = "linux")]
+    if !settings.linux_gpu_optimization_migrated_v1.unwrap_or(false) {
+        if settings.linux_gpu_optimization == Some(true) {
+            settings.linux_gpu_optimization = Some(false);
+        }
+        settings.linux_gpu_optimization_migrated_v1 = Some(true);
         settings_modified = true;
     }
 

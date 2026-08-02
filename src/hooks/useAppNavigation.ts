@@ -57,7 +57,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
   }, []);
 
   const handleBackToLibrary = useCallback(() => {
-    const { selectedImage, resetHistory, setEditor } = useEditorStore.getState();
+    const { selectedImage } = useEditorStore.getState();
     const { setLibrary } = useLibraryStore.getState();
     const { setUI } = useUIStore.getState();
 
@@ -67,49 +67,26 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
     if (transformWrapperRef.current) {
       transformWrapperRef.current.resetTransform(0);
     }
-    setEditor({ zoom: 1 });
+    useEditorStore.getState().setEditor({ zoom: 1 });
 
     debouncedSave.flush();
     debouncedSetHistory.cancel();
 
     const lastActivePath = selectedImage?.path ?? null;
 
-    setEditor({
-      hasRenderedFirstFrame: false,
-      selectedImage: null,
-      finalPreviewUrl: null,
-      uncroppedAdjustedPreviewUrl: null,
-      histogram: null,
-      waveform: null,
-      activeMaskId: null,
-      activeMaskContainerId: null,
-      activeAiPatchContainerId: null,
-      isWbPickerActive: false,
-      activeAiSubMaskId: null,
-      transformedOriginalUrl: null,
-    });
-
-    selectedImagePathRef.current = null;
-
     setLibrary({ libraryActivePath: lastActivePath });
-    setUI({ slideDirection: 1 });
-
-    setEditor({ adjustments: INITIAL_ADJUSTMENTS });
-    resetHistory(INITIAL_ADJUSTMENTS);
-    useEditorStore.getState().patchesSentToBackend.clear();
-
-    isBackendReadyRef.current = true;
-    setEditor((state) => {
-      if (state.interactivePatch?.url) URL.revokeObjectURL(state.interactivePatch.url);
-      return { interactivePatch: null };
-    });
+    setUI({ activeView: 'library', slideDirection: 1 });
   }, [refs]);
 
   const handleImageSelect = useCallback(
-    async (path: string) => {
+    async (path: string, openInEditor: boolean = true) => {
       const { selectedImage, isSliderDragging, resetHistory, setEditor } = useEditorStore.getState();
-      const { setLibrary } = useLibraryStore.getState();
+      const { setLibrary, multiSelectedPaths } = useLibraryStore.getState();
       const { setUI } = useUIStore.getState();
+
+      if (openInEditor) {
+        setUI({ activeView: 'editor' });
+      }
 
       if (selectedImage?.path === path) return;
 
@@ -137,7 +114,14 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
       }
 
       selectedImagePathRef.current = path;
-      setLibrary({ multiSelectedPaths: [path], libraryActivePath: null, selectionAnchorPath: path });
+
+      const newMultiSelectedPaths = multiSelectedPaths.includes(path) ? multiSelectedPaths : [path];
+
+      setLibrary({
+        multiSelectedPaths: newMultiSelectedPaths,
+        libraryActivePath: path,
+        selectionAnchorPath: path,
+      });
 
       setEditor({
         showOriginal: false,
@@ -215,9 +199,11 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
 
       isBackendReadyRef.current = true;
 
+      const imageFile = useLibraryStore.getState().imageList.find((img) => img.path === path);
       setEditor({
         selectedImage: {
           exif: null,
+          group_id: imageFile?.group_id ?? null,
           height: 0,
           isRaw: false,
           isReady: false,
@@ -354,26 +340,50 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
           const paths = files.map((f: ImageFile) => f.path);
 
           if (isExifSortActive) {
-            const exifDataMap: Record<string, any> = await invoke(Invokes.ReadExifForPaths, { paths });
+            let combinedExifMap: Record<string, any> = {};
+            const chunkSize = 100;
+
+            for (let i = 0; i < paths.length; i += chunkSize) {
+              const chunk = paths.slice(i, i + chunkSize);
+              try {
+                const chunkExif: any = await invoke(Invokes.ReadExifForPaths, { paths: chunk });
+                combinedExifMap = { ...combinedExifMap, ...chunkExif };
+              } catch (err) {
+                console.error('Failed to read EXIF chunk:', err);
+              }
+            }
+
             const finalImageList = files.map((image) => ({
               ...image,
-              exif: exifDataMap[image.path] || image.exif || null,
+              exif: combinedExifMap[image.path] || image.exif || null,
             }));
             setLibrary({ imageList: finalImageList });
           } else {
             setLibrary({ imageList: files });
-            invoke(Invokes.ReadExifForPaths, { paths })
-              .then((exifDataMap: any) => {
-                setLibrary((state) => ({
-                  imageList: state.imageList.map((image) => ({
-                    ...image,
-                    exif: exifDataMap[image.path] || image.exif || null,
-                  })),
-                }));
-              })
-              .catch((err) => {
-                console.error('Failed to read EXIF data in background:', err);
-              });
+
+            setTimeout(() => {
+              const fetchExifInChunks = async () => {
+                const chunkSize = 50;
+                for (let i = 0; i < paths.length; i += chunkSize) {
+                  if (useLibraryStore.getState().currentFolderPath !== path) break;
+
+                  const chunk = paths.slice(i, i + chunkSize);
+                  try {
+                    const chunkExif: any = await invoke(Invokes.ReadExifForPaths, { paths: chunk });
+                    setLibrary((state) => ({
+                      imageList: state.imageList.map((image) => ({
+                        ...image,
+                        exif: chunkExif[image.path] || image.exif || null,
+                      })),
+                    }));
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                  } catch (err) {
+                    console.error('Failed to read EXIF chunk:', err);
+                  }
+                }
+              };
+              fetchExifInChunks();
+            }, 500);
           }
         } else {
           setLibrary({ imageList: files });

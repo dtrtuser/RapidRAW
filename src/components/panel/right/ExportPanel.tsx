@@ -21,14 +21,14 @@ import {
   FileFormats,
   WatermarkAnchor,
 } from '../../ui/ExportImportProperties';
-import { Invokes, SelectedImage, AppSettings } from '../../ui/AppProperties';
+import { Invokes, SelectedImage, AppSettings, Panel } from '../../ui/AppProperties';
 import ExportPresetsList from '../../ui/ExportPresetsList';
 import { useExportSettings } from '../../../hooks/useExportSettings';
 import { useOsPlatform } from '../../../hooks/useOsPlatform';
 import Text from '../../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../../types/typography';
-import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from '../../../store/useEditorStore';
+import { useUIStore } from '../../../store/useUIStore';
 
 interface ExportPanelProps {
   exportState: ExportState;
@@ -237,11 +237,7 @@ export default function ExportPanel({
     currentSettingsObject,
   } = useExportSettings();
 
-  const { adjustments } = useEditorStore(
-    useShallow((state) => ({
-      adjustments: state.adjustments,
-    })),
-  );
+  const adjustmentsRef = useRef(useEditorStore.getState().adjustments);
 
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
   const initDone = useRef(false);
@@ -280,23 +276,29 @@ export default function ExportPanel({
   const filenameInputRef = useRef<HTMLInputElement>(null);
   const osPlatform = useOsPlatform();
   const isAndroid = osPlatform === 'android';
+  const activePanels = useUIStore((state) => state.activePanels);
+  const isPanelReallyActive = Object.values(activePanels).includes(Panel.Export);
 
   const { status, progress, errorMessage } = exportState;
-  const isExporting = status === Status.Exporting;
+  const isExporting = [Status.Exporting, Status.Cancelling].includes(status);
+  const isCancelling = status === Status.Cancelling;
   const isLibraryContext = !!onClose;
 
-  const pathsToExport = isLibraryContext
-    ? multiSelectedPaths
-    : multiSelectedPaths.length > 0
+  const pathsToExport = useMemo(() => {
+    return isLibraryContext
       ? multiSelectedPaths
-      : selectedImage
-        ? [selectedImage.path]
-        : [];
+      : multiSelectedPaths.length > 0
+        ? multiSelectedPaths
+        : selectedImage
+          ? [selectedImage.path]
+          : [];
+  }, [isLibraryContext, multiSelectedPaths, selectedImage?.path]);
+
   const numImages = pathsToExport.length;
 
   useEffect(() => {
     const fetchDims = async () => {
-      if (!enableWatermark || numImages === 0 || !isVisible) return;
+      if (!enableWatermark || numImages === 0 || !isVisible || !isPanelReallyActive) return;
       if (!isLibraryContext && selectedImage && selectedImage.width && selectedImage.height) {
         setImageAspectRatio(selectedImage.width / selectedImage.height);
         return;
@@ -371,6 +373,8 @@ export default function ExportPanel({
   );
 
   useEffect(() => {
+    if (!isPanelReallyActive) return;
+
     const exportSettings: ExportSettings = {
       filenameTemplate,
       jpegQuality,
@@ -392,11 +396,27 @@ export default function ExportPanel({
           : null,
     };
     const format = FILE_FORMATS.find((f: FileFormat) => f.id === fileFormat)?.extensions[0] || 'jpeg';
-    debouncedEstimateSize(pathsToExport, adjustments, selectedImage?.path, exportSettings, format);
-    return () => debouncedEstimateSize.cancel();
+    const runEstimate = () =>
+      debouncedEstimateSize(pathsToExport, adjustmentsRef.current, selectedImage?.path, exportSettings, format);
+
+    runEstimate();
+
+    let prevAdjustments = useEditorStore.getState().adjustments;
+    const unsubscribe = useEditorStore.subscribe((state) => {
+      if (state.adjustments !== prevAdjustments) {
+        prevAdjustments = state.adjustments;
+        adjustmentsRef.current = state.adjustments;
+        runEstimate();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      debouncedEstimateSize.cancel();
+    };
   }, [
+    isPanelReallyActive,
     pathsToExport,
-    adjustments,
     selectedImage?.path,
     fileFormat,
     jpegQuality,
@@ -506,13 +526,12 @@ export default function ExportPanel({
 
       if (isAndroid || outputFolderOrFile) {
         if (!isAndroid) {
-          const dir =
-            shouldChooseOutputFile
-              ? outputFolderOrFile.substring(
-                  0,
-                  Math.max(outputFolderOrFile.lastIndexOf('/'), outputFolderOrFile.lastIndexOf('\\')),
-                )
-              : outputFolderOrFile;
+          const dir = shouldChooseOutputFile
+            ? outputFolderOrFile.substring(
+                0,
+                Math.max(outputFolderOrFile.lastIndexOf('/'), outputFolderOrFile.lastIndexOf('\\')),
+              )
+            : outputFolderOrFile;
           if (dir) saveLastUsedPreset(dir);
         }
 
@@ -525,7 +544,7 @@ export default function ExportPanel({
           exportSettings,
           outputFormat: selectedFormat.extensions[0],
           currentEditPath: selectedImage?.path || null,
-          currentEditAdjustments: adjustments || null,
+          currentEditAdjustments: adjustmentsRef.current || null,
         });
       }
     } catch (error) {
@@ -538,10 +557,16 @@ export default function ExportPanel({
   };
 
   const handleCancel = async () => {
+    setExportState((current: ExportState) =>
+      current.status === Status.Exporting ? { status: Status.Cancelling } : {},
+    );
     try {
       await invoke(Invokes.CancelExport);
     } catch (error) {
       console.error('Failed to cancel:', error);
+      setExportState((current: ExportState) =>
+        current.status === Status.Cancelling ? { status: Status.Exporting } : {},
+      );
     }
   };
 
@@ -552,26 +577,20 @@ export default function ExportPanel({
 
   return (
     <div className={onClose ? 'h-full bg-bg-secondary rounded-lg flex flex-col' : 'flex flex-col h-full'}>
-      <div className="p-4 flex justify-between items-center shrink-0 border-b border-surface">
+      <div className="p-3 flex justify-between items-center shrink-0 border-b border-surface">
         <Text variant={TextVariants.title}>{t('export.title')}</Text>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
-          >
-            <X size={20} />
-          </button>
-        )}
       </div>
-      <div className="grow overflow-y-auto p-4 space-y-8">
+      <div className="grow overflow-y-auto p-3 space-y-8">
         {canExport ? (
           <>
-            <ExportPresetsList
-              appSettings={appSettings}
-              onSettingsChange={onSettingsChange}
-              currentSettings={currentSettingsObject}
-              onApplyPreset={handleApplyPreset}
-            />
+            <div className={isExporting ? 'opacity-50 pointer-events-none' : ''}>
+              <ExportPresetsList
+                appSettings={appSettings}
+                onSettingsChange={onSettingsChange}
+                currentSettings={currentSettingsObject}
+                onApplyPreset={handleApplyPreset}
+              />
+            </div>
 
             <Section title={t('export.sections.fileSettings')}>
               <div className="grid grid-cols-3 gap-2">
@@ -599,7 +618,7 @@ export default function ExportPanel({
                     }
                     max={100}
                     min={1}
-                    onChange={(e) => setJpegQuality(parseInt(e.target.value))}
+                    onChange={(e) => setJpegQuality(Number(e.target.value))}
                     step={1}
                     value={jpegQuality}
                     fillOrigin="min"
@@ -707,12 +726,14 @@ export default function ExportPanel({
                   />
                   {enableWatermark && (
                     <div className="space-y-4 pl-2 border-l-2 border-surface">
-                      <ImagePicker
-                        label={t('export.watermark.watermarkImage')}
-                        imageName={watermarkPath ? watermarkPath.split(/[\\/]/).pop() || null : null}
-                        onImageSelect={setWatermarkPath}
-                        onClear={() => setWatermarkPath(null)}
-                      />
+                      <div className={isExporting ? 'opacity-50 pointer-events-none' : ''}>
+                        <ImagePicker
+                          label={t('export.watermark.watermarkImage')}
+                          imageName={watermarkPath ? watermarkPath.split(/[\\/]/).pop() || null : null}
+                          onImageSelect={setWatermarkPath}
+                          onClear={() => setWatermarkPath(null)}
+                        />
+                      </div>
                       {watermarkPath && (
                         <>
                           <Dropdown
@@ -729,7 +750,7 @@ export default function ExportPanel({
                               max={50}
                               step={1}
                               value={watermarkScale}
-                              onChange={(e) => setWatermarkScale(parseInt(e.target.value))}
+                              onChange={(e) => setWatermarkScale(Number(e.target.value))}
                               disabled={isExporting}
                               defaultValue={10}
                             />
@@ -739,7 +760,7 @@ export default function ExportPanel({
                               max={25}
                               step={1}
                               value={watermarkSpacing}
-                              onChange={(e) => setWatermarkSpacing(parseInt(e.target.value))}
+                              onChange={(e) => setWatermarkSpacing(Number(e.target.value))}
                               disabled={isExporting}
                               defaultValue={5}
                             />
@@ -749,7 +770,7 @@ export default function ExportPanel({
                               max={100}
                               step={1}
                               value={watermarkOpacity}
-                              onChange={(e) => setWatermarkOpacity(parseInt(e.target.value))}
+                              onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
                               disabled={isExporting}
                               defaultValue={75}
                             />
@@ -778,6 +799,7 @@ export default function ExportPanel({
               <div className="bg-surface rounded-xl overflow-hidden">
                 <button
                   onClick={() => setIsAdvancedExpanded(!isAdvancedExpanded)}
+                  disabled={isExporting}
                   className="w-full flex items-center justify-between p-3.5 hover:bg-card-active transition-colors"
                 >
                   <Text
@@ -837,18 +859,20 @@ export default function ExportPanel({
             </div>
           </>
         ) : (
-          <Text
-            variant={TextVariants.heading}
-            color={TextColors.secondary}
-            weight={TextWeights.normal}
-            className="text-center mt-4"
-          >
-            {isLibraryContext ? t('export.status.noImagesSelected') : t('export.status.noImageSelected')}
-          </Text>
+          <div className="flex items-center justify-center h-full">
+            <Text
+              variant={TextVariants.heading}
+              color={TextColors.secondary}
+              weight={TextWeights.normal}
+              className="text-center"
+            >
+              {isLibraryContext ? t('export.status.noImagesSelected') : t('export.status.noImageSelected')}
+            </Text>
+          </div>
         )}
       </div>
 
-      <div className="p-4 border-t border-surface shrink-0 space-y-2">
+      <div className="p-3 border-t border-surface shrink-0 space-y-2">
         <Text as="div" variant={TextVariants.small} color={TextColors.primary} className="text-center">
           {isEstimating ? (
             <span className="italic">{t('export.status.estimatingSize')}</span>
@@ -866,15 +890,17 @@ export default function ExportPanel({
           className={`group rounded-md h-11 w-full flex items-center text-md font-bold! justify-center ${
             status === Status.Exporting
               ? 'bg-red-600/80 hover:bg-red-600 text-white'
-              : status === Status.Success
-                ? 'bg-green-500/70 text-white shadow-none'
-                : status === Status.Error
-                  ? 'bg-red-500/20 text-red-400 shadow-none'
-                  : status === Status.Cancelled
-                    ? 'bg-yellow-500/20 text-yellow-400 shadow-none'
-                    : ''
+              : status === Status.Cancelling
+                ? 'bg-yellow-500/20 text-yellow-400 shadow-none'
+                : status === Status.Success
+                  ? 'bg-green-500/70 text-white shadow-none'
+                  : status === Status.Error
+                    ? 'bg-red-500/20 text-red-400 shadow-none'
+                    : status === Status.Cancelled
+                      ? 'bg-yellow-500/20 text-yellow-400 shadow-none'
+                      : ''
           }`}
-          disabled={status === Status.Exporting ? false : !canExport}
+          disabled={isCancelling || (status !== Status.Exporting && !canExport)}
           onClick={status === Status.Exporting ? handleCancel : handleExport}
           size="lg"
         >
@@ -890,6 +916,10 @@ export default function ExportPanel({
                 <Ban size={18} className="mr-2" />
                 {t('export.status.cancelExport')}
               </span>
+            </>
+          ) : status === Status.Cancelling ? (
+            <>
+              <Loader size={18} className="animate-spin mr-2" /> {t('export.status.cancelling')}
             </>
           ) : status === Status.Success ? (
             <>

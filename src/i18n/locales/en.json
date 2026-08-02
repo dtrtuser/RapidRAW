@@ -112,11 +112,18 @@
     },
     "effects": {
       "amount": "Amount",
+      "bokehCircular": "Circular",
+      "bokehHexagonal": "Hexagonal",
+      "bokehOctagonal": "Octagonal",
+      "bokehRing": "Bubble (Ring)",
+      "bokehShape": "Bokeh Shape",
       "creative": "Creative",
       "feather": "Feather",
       "glow": "Glow",
       "grain": "Grain",
       "halation": "Halation",
+      "lensBlur": "Lens Blur",
+      "lensDiffusion": "Diffusion",
       "lightFlares": "Light Flares",
       "lut": "LUT",
       "midpoint": "Midpoint",
@@ -352,6 +359,7 @@
       "dropzoneText": "Drop here to create a new edit",
       "editSettingsTitle": "Edit Settings",
       "editsTitle": "Edits",
+      "generatingDepthMap": "Calculating AI Depth Map...",
       "generativeEditTitle": "Generative Edit",
       "inpaintingTitle": "Inpainting",
       "manualCleanupTitle": "Manual Cleanup",
@@ -365,7 +373,11 @@
         "aiEdit_one": "AI Edit {{count}}",
         "aiEdit_other": "AI Edit {{count}}",
         "clone": "Clone {{count}}",
+        "clone_one": "Clone {{count}}",
+        "clone_other": "Clone {{count}}",
         "heal": "Heal {{count}}",
+        "heal_one": "Heal {{count}}",
+        "heal_other": "Heal {{count}}",
         "invertedName": "{{name}} Inverted",
         "quickErase": "Quick Erase {{count}}",
         "quickErase_one": "Quick Erase {{count}}",
@@ -506,6 +518,9 @@
       "done": "Done",
       "exporting": "Exporting…",
       "savesTo": "External edit — saves to"
+    },
+    "layout": {
+      "split": "Split"
     },
     "masks": {
       "actions": {
@@ -705,6 +720,7 @@
       }
     },
     "toolbar": {
+      "switchToVariant": "Switch to {{label}}",
       "tooltips": {
         "aperture": "Aperture",
         "backToLibrary": "Back to Library",
@@ -776,6 +792,7 @@
     "status": {
       "cancelExport": "Cancel Export",
       "cancelled": "Export cancelled",
+      "cancelling": "Cancelling export…",
       "estimatedAverageSize": " ({{size}} avg)",
       "estimatedSize": "Estimated file size: ~{{size}}",
       "estimatedTotalSize": "Estimated total size: ~{{size}}",
@@ -830,6 +847,31 @@
         "name": "Name (A-Z)"
       }
     },
+    "culling": {
+      "addTagPlaceholder": "Add tag...",
+      "altCullingPreviewHighRes": "Culling Preview High Res",
+      "altThumbnailLoading": "Thumbnail Loading",
+      "aperture": "Aperture",
+      "cameraSettings": "Camera Settings",
+      "clickThumbnailsHint": "Click thumbnails in the right sidebar to add them to the comparison view.",
+      "colorLabel": "Color Label",
+      "dimensions": "Dimensions",
+      "editImage": "Edit Image",
+      "focalLength": "Focal Length",
+      "iso": "ISO",
+      "metadata": "Metadata",
+      "noMetadataAvailable": "No metadata available",
+      "noTagsAdded": "No tags added",
+      "none": "None",
+      "rateAndLabel": "Rate & Label",
+      "rating": "Rating",
+      "selectImagesToCompare": "Select images to compare",
+      "shutterSpeed": "Shutter Speed",
+      "syncZoomAndPan": "Sync Zoom and Pan",
+      "tags": "Tags",
+      "toggleFit": "Toggle 1:1 / Fit",
+      "vc": "VC"
+    },
     "filters": {
       "edited": {
         "all": "All Images",
@@ -851,7 +893,6 @@
       "raw": {
         "all": "All Types",
         "nonRawOnly": "Non-RAW Only",
-        "preferRaw": "Prefer RAW",
         "rawOnly": "RAW Only"
       }
     },
@@ -875,6 +916,7 @@
         "modified": "Date Modified",
         "name": "Alphabetically"
       },
+      "sourcesTitle": "Sources",
       "tooltips": {
         "clearSearch": "Clear search",
         "collapse": "Collapse",
@@ -915,6 +957,12 @@
         "filterByEdited": "Filter by Edit Status",
         "filterByFileType": "Filter by File Type",
         "filterByRating": "Filter by Rating",
+        "groupEditedFiles": "Include edited files in groups",
+        "groupIgnoreMetadata": "Ignore mismatched EXIF dates",
+        "groupOff": "Off",
+        "groupPreferJpeg": "Prefer JPEG",
+        "groupPreferRaw": "Prefer RAW",
+        "groupRawJpeg": "Group RAW + JPEG",
         "metadataAlways": "Always",
         "metadataHover": "On Hover",
         "metadataOff": "Off",
@@ -1072,6 +1120,9 @@
       "confirm": "Confirm"
     },
     "copyPaste": {
+      "autoSyncDesc": "Automatically apply adjustments to all selected images.",
+      "autoSyncLabel": "Enable auto-sync",
+      "autoSyncTitle": "Auto-sync adjustments",
       "cancel": "Cancel",
       "descMerge": "Adds your copied changes, leaving other settings untouched.",
       "descReplace": "Overwrites all selected settings, resetting the rest to their defaults.",
@@ -1449,9 +1500,12 @@
         "color_label_yellow": "Color label: Yellow",
         "copy_adjustments": "Copy selected adjustments",
         "copy_files": "Copy selected file(s)",
+        "copy_image_path": "Copy path of selected image(s)",
         "cycle_zoom": "Cycle zoom (Fit, 2x Fit, 100%)",
         "delete_selected": "Delete selected file(s)",
+        "focus_search": "Focus search field",
         "open_image": "Open selected image",
+        "open_settings": "Open settings",
         "paste_adjustments": "Paste copied adjustments",
         "paste_files": "Paste file(s) to current folder",
         "preview_next": "Next image",
@@ -1558,6 +1612,9 @@
         },
         "title": "Generative AI"
       },
+      "alwaysDecodeRaw": "Always Decode RAW",
+      "alwaysDecodeRawDesc": "Force full RAW decoding for thumbnails instead of using embedded JPEG previews. Enable this if your thumbnails look different in color or contrast compared to the opened image.",
+      "alwaysDecodeRawLabel": "Always decode RAW for thumbnails",
       "backend": "Processing Backend",
       "backendDesc": "Select the graphics API. 'Auto' is recommended. May fix crashes on some systems.",
       "backends": {
@@ -1576,7 +1633,7 @@
       "imageCacheDesc": "Maximum number of full-resolution images kept in RAM. Higher values make switching between recently edited images instant, but use significantly more memory.",
       "images": "Images",
       "linuxCompat": "Linux Compatibility Mode",
-      "linuxCompatDesc": "Enable workarounds for common GPU driver and display server issues. Disable this to enable full GPU acceleration.",
+      "linuxCompatDesc": "Force software compositing to work around GPU driver crashes. Nvidia GPUs already get a lighter, non-software-fallback workaround automatically, so only enable this if you still experience crashes on launch or when opening images.",
       "linuxCompatLabel": "Enable Compatibility Mode",
       "livePreviewQuality": "Live Preview Quality",
       "livePreviewQualityDesc": "Controls the resolution and compression of the image while dragging sliders. Lower quality significantly improves responsiveness.",

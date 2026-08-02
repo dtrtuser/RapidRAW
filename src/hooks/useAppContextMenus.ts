@@ -320,7 +320,7 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
   );
 
   const handleThumbnailContextMenu = useCallback(
-    (event: any, path: string) => {
+    (event: any, path: string, forceSingleSelection: boolean = false) => {
       event.preventDefault();
       event.stopPropagation();
 
@@ -328,13 +328,15 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
       const { multiSelectedPaths, imageList, libraryActivePath, albumTree, activeAlbumId, setLibrary } =
         useLibraryStore.getState();
       const { appSettings } = useSettingsStore.getState();
-      const { setUI, setRightPanel } = useUIStore.getState();
+      const { activeView, setUI, setRightPanel } = useUIStore.getState();
       const { setProcess } = useProcessStore.getState();
 
       const isTargetInSelection = multiSelectedPaths.includes(path);
       let finalSelection: string[];
 
-      if (!isTargetInSelection) {
+      if (forceSingleSelection) {
+        finalSelection = [path];
+      } else if (!isTargetInSelection) {
         finalSelection = [path];
         setLibrary({ multiSelectedPaths: [path] });
         if (!selectedImage) {
@@ -348,7 +350,7 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
 
       const selectionCount = finalSelection.length;
       const isSingleSelection = selectionCount === 1;
-      const isEditingThisImage = selectedImage?.path === path;
+      const isEditingThisImage = activeView === 'editor' && selectedImage?.path === path;
       const deleteLabel = t('contextMenus.thumbnail.deleteImage', { count: selectionCount });
       const exportLabel = t('contextMenus.thumbnail.exportImage', { count: selectionCount });
 
@@ -358,10 +360,18 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
         imageList.some((image) => image.path.startsWith(`${finalSelection[0]}?vc=`));
 
       const hasAssociatedFiles = finalSelection.some((selectedPath) => {
-        const lastDotIndex = selectedPath.lastIndexOf('.');
-        if (lastDotIndex === -1) return false;
-        const basePath = selectedPath.substring(0, lastDotIndex);
-        return imageList.some((image) => image.path.startsWith(basePath + '.') && image.path !== selectedPath);
+        const image = imageList.find((img) => img.path === selectedPath);
+        if (image?.group_id != null) return true;
+
+        const getBasePath = (p: string) => {
+          const qMark = p.indexOf('?');
+          const clean = qMark === -1 ? p : p.substring(0, qMark);
+          const dot = clean.lastIndexOf('.');
+          return dot === -1 ? clean : clean.substring(0, dot);
+        };
+        const basePath = getBasePath(selectedPath);
+
+        return imageList.some((img) => img.path !== selectedPath && getBasePath(img.path) === basePath);
       });
 
       let deleteSubmenu;

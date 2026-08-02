@@ -5,150 +5,124 @@ LOCALES_DIR = Path("./locales")
 
 TRANSLATIONS = {
     "de": {
-        "masks": {
-            "clone": "Klonen",
-            "heal": "Reparieren"
-        },
-        "ai": {
-            "manualCleanupTitle": "Manuelle Bereinigung",
-            "generativeEditTitle": "Generative Bearbeitung",
-            "patches_clone": "Klonen {{count}}",
-            "patches_heal": "Reparieren {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "RAW immer decodieren",
+                "alwaysDecodeRawDesc": "Erzwingt die vollständige RAW-Decodierung für Vorschaubilder, anstatt eingebettete JPEG-Vorschauen zu verwenden. Aktiviere diese Option, wenn sich die Vorschaubilder farblich oder im Kontrast vom geöffneten Bild unterscheiden.",
+                "alwaysDecodeRawLabel": "RAW für Vorschaubilder immer decodieren"
+            }
         }
     },
     "en": {
-        "masks": {
-            "clone": "Clone",
-            "heal": "Heal"
-        },
-        "ai": {
-            "manualCleanupTitle": "Manual Cleanup",
-            "generativeEditTitle": "Generative Edit",
-            "patches_clone": "Clone {{count}}",
-            "patches_heal": "Heal {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Always Decode RAW",
+                "alwaysDecodeRawDesc": "Force full RAW decoding for thumbnails instead of using embedded JPEG previews. Enable this if your thumbnails look different in color or contrast compared to the opened image.",
+                "alwaysDecodeRawLabel": "Always decode RAW for thumbnails"
+            }
         }
     },
     "es": {
-        "masks": {
-            "clone": "Clonar",
-            "heal": "Curar"
-        },
-        "ai": {
-            "manualCleanupTitle": "Limpieza manual",
-            "generativeEditTitle": "Edición generativa",
-            "patches_clone": "Clonar {{count}}",
-            "patches_heal": "Curar {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Decodificar RAW siempre",
+                "alwaysDecodeRawDesc": "Fuerza la decodificación RAW completa para las miniaturas en lugar de usar vistas previas JPEG incrustadas. Activa esta opción si las miniaturas tienen colores o contrastes diferentes a la imagen abierta.",
+                "alwaysDecodeRawLabel": "Decodificar RAW siempre para miniaturas"
+            }
         }
     },
     "fr": {
-        "masks": {
-            "clone": "Cloner",
-            "heal": "Corriger"
-        },
-        "ai": {
-            "manualCleanupTitle": "Nettoyage manuel",
-            "generativeEditTitle": "Édition générative",
-            "patches_clone": "Cloner {{count}}",
-            "patches_heal": "Corriger {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Toujours décoder le RAW",
+                "alwaysDecodeRawDesc": "Force le décodage RAW complet pour les miniatures au lieu d'utiliser les aperçus JPEG intégrés. Activez cette option si vos miniatures ont des couleurs ou des contrastes différents de l'image ouverte.",
+                "alwaysDecodeRawLabel": "Toujours décoder le RAW pour les miniatures"
+            }
         }
     },
     "it": {
-        "masks": {
-            "clone": "Clona",
-            "heal": "Ripara"
-        },
-        "ai": {
-            "manualCleanupTitle": "Pulizia manuale",
-            "generativeEditTitle": "Modifica generativa",
-            "patches_clone": "Clona {{count}}",
-            "patches_heal": "Ripara {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Decodifica RAW sempre",
+                "alwaysDecodeRawDesc": "Forza la decodifica RAW completa per le miniature invece di usare le anteprime JPEG incorporate. Attiva questa opzione se i colori o il contrasto delle miniature sono diversi dall'immagine aperta.",
+                "alwaysDecodeRawLabel": "Decodifica RAW sempre per le miniature"
+            }
         }
     },
     "ja": {
-        "masks": {
-            "clone": "クローン",
-            "heal": "修復"
-        },
-        "ai": {
-            "manualCleanupTitle": "手動クリーンアップ",
-            "generativeEditTitle": "生成編集",
-            "patches_clone": "クローン {{count}}",
-            "patches_heal": "修復 {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "常にRAWをデコード",
+                "alwaysDecodeRawDesc": "埋め込まれたJPEGプレビューを使用する代わりに、サムネイルの完全なRAWデコードを強制します。サムネイルの色やコントラストが開いた画像と異なる場合に有効にしてください。",
+                "alwaysDecodeRawLabel": "サムネイル用に常にRAWをデコード"
+            }
         }
     },
     "ko": {
-        "masks": {
-            "clone": "복제",
-            "heal": "복구"
-        },
-        "ai": {
-            "manualCleanupTitle": "수동 정리",
-            "generativeEditTitle": "생성형 편집",
-            "patches_clone": "복제 {{count}}",
-            "patches_heal": "복구 {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "항상 RAW 디코딩",
+                "alwaysDecodeRawDesc": "포함된 JPEG 미리보기를 사용하는 대신 썸네일에 대해 전체 RAW 디코딩을 강제합니다. 썸네일의 색상이나 대비가 열린 이미지와 다르게 보이는 경우 이 옵션을 활성화하세요.",
+                "alwaysDecodeRawLabel": "썸네일에 대해 항상 RAW 디코딩"
+            }
         }
     },
     "pl": {
-        "masks": {
-            "clone": "Klonowanie",
-            "heal": "Naprawianie"
-        },
-        "ai": {
-            "manualCleanupTitle": "Ręczne czyszczenie",
-            "generativeEditTitle": "Edycja generatywna",
-            "patches_clone": "Klonowanie {{count}}",
-            "patches_heal": "Naprawianie {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Zawsze dekoduj RAW",
+                "alwaysDecodeRawDesc": "Wymusza pełne dekodowanie RAW dla miniatur zamiast korzystania z osadzonych podglądów JPEG. Włącz tę opcję, jeśli miniatury różnią się kolorami lub kontrastem od otwartego obrazu.",
+                "alwaysDecodeRawLabel": "Zawsze dekoduj RAW dla miniatur"
+            }
         }
     },
     "pt": {
-        "masks": {
-            "clone": "Clonar",
-            "heal": "Restaurar"
-        },
-        "ai": {
-            "manualCleanupTitle": "Limpeza Manual",
-            "generativeEditTitle": "Edição Generativa",
-            "patches_clone": "Clonar {{count}}",
-            "patches_heal": "Restaurar {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Sempre decodificar RAW",
+                "alwaysDecodeRawDesc": "Força a decodificação RAW completa para miniaturas em vez de usar visualizações JPEG incorporadas. Ative esta opção se as suas miniaturas tiverem cores ou contrastes diferentes em comparação com a imagem aberta.",
+                "alwaysDecodeRawLabel": "Sempre decodificar RAW para miniaturas"
+            }
         }
     },
     "ru": {
-        "masks": {
-            "clone": "Штамп",
-            "heal": "Восстановление"
-        },
-        "ai": {
-            "manualCleanupTitle": "Ручная очистка",
-            "generativeEditTitle": "Генеративное редактирование",
-            "patches_clone": "Штамп {{count}}",
-            "patches_heal": "Восстановление {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "Всегда декодировать RAW",
+                "alwaysDecodeRawDesc": "Принудительно использовать полное декодирование RAW для миниатюр вместо встроенных превью JPEG. Включите эту опцию, если цвета или контрастность миниатюр отличаются от открытого изображения.",
+                "alwaysDecodeRawLabel": "Всегда декодировать RAW для миниатюр"
+            }
         }
     },
     "zh-CN": {
-        "masks": {
-            "clone": "克隆",
-            "heal": "修复"
-        },
-        "ai": {
-            "manualCleanupTitle": "手动清理",
-            "generativeEditTitle": "生成式编辑",
-            "patches_clone": "克隆 {{count}}",
-            "patches_heal": "修复 {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "始终解码 RAW",
+                "alwaysDecodeRawDesc": "强制对缩略图进行完整的 RAW 解码，而不是使用内置的 JPEG 预览。如果您的缩略图在颜色或对比度上与打开的图像不同，请启用此选项。",
+                "alwaysDecodeRawLabel": "始终为缩略图解码 RAW"
+            }
         }
     },
     "zh-TW": {
-        "masks": {
-            "clone": "仿製",
-            "heal": "修復"
-        },
-        "ai": {
-            "manualCleanupTitle": "手動清理",
-            "generativeEditTitle": "生成式編輯",
-            "patches_clone": "仿製 {{count}}",
-            "patches_heal": "修復 {{count}}"
+        "settings": {
+            "processing": {
+                "alwaysDecodeRaw": "始終解碼 RAW",
+                "alwaysDecodeRawDesc": "強制對縮圖進行完整的 RAW 解碼，而不是使用內建的 JPEG 預覽。如果您的縮圖在顏色或對比度上與打開的影像不同，請啟用此選項。",
+                "alwaysDecodeRawLabel": "始終為縮圖解碼 RAW"
+            }
         }
     }
 }
+
+def deep_merge(target: dict, source: dict):
+    """Recursively merges source dict into target dict."""
+    for key, value in source.items():
+        if isinstance(value, dict):
+            node = target.setdefault(key, {})
+            if isinstance(node, dict):
+                deep_merge(node, value)
+        else:
+            target[key] = value
 
 def sort_dict_recursively(item):
     if isinstance(item, dict):
@@ -169,23 +143,7 @@ def update_json_file(file_path: Path, trans: dict):
         print(f"Error parsing JSON in {file_path.name}. Skipping.")
         return
 
-    # masks -> types -> clone / heal
-    masks_node = data.setdefault("masks", {})
-    types_node = masks_node.setdefault("types", {})
-    types_node["clone"] = trans["masks"]["clone"]
-    types_node["heal"] = trans["masks"]["heal"]
-
-    # editor -> ai -> title translations
-    editor_node = data.setdefault("editor", {})
-    ai_node = editor_node.setdefault("ai", {})
-    ai_node["manualCleanupTitle"] = trans["ai"]["manualCleanupTitle"]
-    ai_node["generativeEditTitle"] = trans["ai"]["generativeEditTitle"]
-
-    # editor -> ai -> patches -> clone / heal
-    patches_node = ai_node.setdefault("patches", {})
-    patches_node["clone"] = trans["ai"]["patches_clone"]
-    patches_node["heal"] = trans["ai"]["patches_heal"]
-
+    deep_merge(data, trans)
     sorted_data = sort_dict_recursively(data)
 
     with open(file_path, "w", encoding="utf-8") as f:
@@ -199,7 +157,7 @@ def main():
         print(f"Error: Locales directory '{LOCALES_DIR}' does not exist.")
         return
 
-    print("Starting sorted translation updates...")
+    print("Starting thumbnail RAW decoding translation updates...")
     for lang, trans in TRANSLATIONS.items():
         file_path = LOCALES_DIR / f"{lang}.json"
         update_json_file(file_path, trans)

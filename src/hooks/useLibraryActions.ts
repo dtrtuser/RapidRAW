@@ -9,7 +9,7 @@ import { globalImageCache } from '../utils/ImageLRUCache';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { computeSortedLibrary } from './useSortedLibrary';
 
-export function useLibraryActions(handleImageSelect?: (path: string) => void) {
+export function useLibraryActions(handleImageSelect?: (path: string, openInEditor?: boolean) => void) {
   const handleRate = useCallback((newRating: number, paths?: string[]) => {
     const { multiSelectedPaths, imageRatings, setLibrary } = useLibraryStore.getState();
     const { selectedImage } = useEditorStore.getState();
@@ -132,11 +132,35 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
   }, []);
 
   const handleClearSelection = useCallback(() => {
+    const activeView = useUIStore.getState().activeView;
     const { selectedImage } = useEditorStore.getState();
-    if (selectedImage) {
-      useLibraryStore.getState().setLibrary({ multiSelectedPaths: [selectedImage.path] });
+
+    if (activeView === 'editor' && selectedImage) {
+      useLibraryStore.getState().setLibrary({
+        multiSelectedPaths: [selectedImage.path],
+        libraryActivePath: selectedImage.path,
+        selectionAnchorPath: selectedImage.path,
+      });
     } else {
-      useLibraryStore.getState().setLibrary({ multiSelectedPaths: [], libraryActivePath: null });
+      useLibraryStore.getState().setLibrary({
+        multiSelectedPaths: [],
+        libraryActivePath: null,
+        selectionAnchorPath: null,
+      });
+
+      useEditorStore.getState().setEditor({
+        selectedImage: null,
+        finalPreviewUrl: null,
+        uncroppedAdjustedPreviewUrl: null,
+        histogram: null,
+        waveform: null,
+        activeMaskId: null,
+        activeMaskContainerId: null,
+        activeAiPatchContainerId: null,
+        activeAiSubMaskId: null,
+        isWbPickerActive: false,
+        transformedOriginalUrl: null,
+      });
     }
   }, []);
 
@@ -144,13 +168,19 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
     (
       path: string,
       event: any,
-      options: { onSimpleClick(p: any): void; updateLibraryActivePath: boolean; shiftAnchor: string | null },
+      options: {
+        onSimpleClick(p: string, isAlreadySelected: boolean): void;
+        updateLibraryActivePath: boolean;
+        shiftAnchor: string | null;
+      },
     ) => {
       const libraryState = useLibraryStore.getState();
       const { multiSelectedPaths, setLibrary } = libraryState;
       const { ctrlKey, metaKey, shiftKey } = event;
       const isCtrlPressed = ctrlKey || metaKey;
       const { shiftAnchor, onSimpleClick, updateLibraryActivePath } = options;
+
+      const isAlreadySelected = multiSelectedPaths.includes(path);
 
       if (shiftKey && shiftAnchor) {
         const sortedImageList = computeSortedLibrary(libraryState, useSettingsStore.getState());
@@ -182,8 +212,7 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
           else setLibrary({ libraryActivePath: null });
         }
       } else {
-        onSimpleClick(path);
-        setLibrary({ selectionAnchorPath: path });
+        onSimpleClick(path, isAlreadySelected);
       }
     },
     [],
@@ -195,11 +224,19 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
       handleMultiSelectClick(path, event, {
         shiftAnchor: selectionAnchorPath ?? libraryActivePath,
         updateLibraryActivePath: true,
-        onSimpleClick: (p: any) =>
-          setLibrary({ multiSelectedPaths: [p], libraryActivePath: p, selectionAnchorPath: p }),
+        onSimpleClick: (p: string, isAlreadySelected: boolean) => {
+          if (isAlreadySelected) {
+            setLibrary({ libraryActivePath: p, selectionAnchorPath: p });
+          } else {
+            setLibrary({ multiSelectedPaths: [p], libraryActivePath: p, selectionAnchorPath: p });
+          }
+          if (handleImageSelect) {
+            handleImageSelect(p, false);
+          }
+        },
       });
     },
-    [handleMultiSelectClick],
+    [handleMultiSelectClick, handleImageSelect],
   );
 
   const handleImageClick = useCallback(
@@ -211,7 +248,10 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
       handleMultiSelectClick(path, event, {
         shiftAnchor: selectionAnchorPath ?? (inEditor ? selectedImage.path : libraryActivePath),
         updateLibraryActivePath: !inEditor,
-        onSimpleClick: (p: string) => {
+        onSimpleClick: (p: string, isAlreadySelected: boolean) => {
+          if (!isAlreadySelected) {
+            setLibrary({ multiSelectedPaths: [p] });
+          }
           if (handleImageSelect) handleImageSelect(p);
           setLibrary({ selectionAnchorPath: p });
         },

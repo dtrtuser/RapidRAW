@@ -1,12 +1,15 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
-import { Eye, EyeOff, ArrowLeft, Maximize, Loader2, Undo, Redo, Waves } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Maximize, Loader2, Undo, Redo } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { SelectedImage } from '../../ui/AppProperties';
+import { SelectedImage, GroupingMode } from '../../ui/AppProperties';
 import { IconAperture, IconCalendar, IconClock, IconFocalLength, IconIso, IconShutter } from './ExifIcons';
 import Text from '../../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../../types/typography';
+import { useLibraryStore } from '../../../store/useLibraryStore';
+import { useSettingsStore } from '../../../store/useSettingsStore';
+import { findGroupVariants, getVariantLabel } from '../../../utils/imageGrouping';
 
 interface EditorToolbarProps {
   canRedo: boolean;
@@ -14,6 +17,7 @@ interface EditorToolbarProps {
   isAndroid: boolean;
   isLoading: boolean;
   onBackToLibrary(): void;
+  onImageSelect?(path: string, event?: any): void;
   onRedo(): void;
   onToggleFullScreen(): void;
   onToggleShowOriginal(): void;
@@ -34,6 +38,7 @@ const EditorToolbar = memo(
     isAndroid,
     isLoading,
     onBackToLibrary,
+    onImageSelect,
     onRedo,
     onToggleFullScreen,
     onToggleShowOriginal,
@@ -49,6 +54,7 @@ const EditorToolbar = memo(
     const { t } = useTranslation();
     const isAnyLoading = isLoading;
     const [isLoaderVisible, setIsLoaderVisible] = useState(false);
+    const [isLoaderMounted, setIsLoaderMounted] = useState(false);
     const [disableLoaderTransition, setDisableLoaderTransition] = useState(false);
     const hideTimeoutRef = useRef<number | null>(null);
     const prevIsLoadingRef = useRef(isLoading);
@@ -60,6 +66,18 @@ const EditorToolbar = memo(
 
     const showResolution = !isAndroid && selectedImage.width > 0 && selectedImage.height > 0;
     const [displayedResolution, setDisplayedResolution] = useState('');
+
+    const imageList = useLibraryStore((s) => s.imageList);
+    const groupingMode: GroupingMode = useSettingsStore((s) => s.appSettings?.grouping) ?? 'off';
+
+    const variantOptions = useMemo(() => {
+      if (groupingMode === 'off' || !onImageSelect) return [];
+      const isVC = selectedImage.path.includes('?vc=');
+      if (isVC) return [];
+      const variants = findGroupVariants(imageList, selectedImage.group_id);
+      if (variants.length < 2) return [];
+      return variants.map((v) => ({ path: v.path, label: getVariantLabel(v.path) }));
+    }, [groupingMode, selectedImage.path, imageList, onImageSelect]);
 
     const { baseName, isVirtualCopy, vcId, exifData, hasExif } = useMemo(() => {
       const path = selectedImage.path;
@@ -137,6 +155,14 @@ const EditorToolbar = memo(
         if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
       };
     }, [isAnyLoading, isLoading, isLoaderVisible]);
+
+    useEffect(() => {
+      if (isLoaderVisible) {
+        setIsLoaderMounted(true);
+      } else if (disableLoaderTransition) {
+        setIsLoaderMounted(false);
+      }
+    }, [isLoaderVisible, disableLoaderTransition]);
 
     useEffect(() => {
       if (!isHistoryVisible) return;
@@ -331,13 +357,14 @@ const EditorToolbar = memo(
     const isExpanded = isInfoHovered && (hasExif || isLoading);
 
     return (
-      <div className="relative shrink-0 flex items-center justify-between px-4 h-14 gap-4 z-40">
+      <div className="relative shrink-0 flex items-center justify-between px-3 h-12 gap-3 z-40">
         <div className="flex items-center gap-2 shrink-0 z-40">
           <button
             className="bg-surface text-text-primary p-2 rounded-full hover:bg-card-active transition-colors shrink-0"
             onClick={onBackToLibrary}
             onKeyDown={handleButtonKeyDown}
             data-tooltip={t('editor.toolbar.tooltips.backToLibrary')}
+            data-bench-id="back-to-library"
           >
             <ArrowLeft size={20} />
           </button>
@@ -363,13 +390,13 @@ const EditorToolbar = memo(
             className={clsx(
               'bg-surface flex flex-col items-center overflow-hidden transition-all duration-200 ease-out pt-2',
               isExpanded
-                ? 'h-18 px-8 rounded-2xl absolute min-w-[340px] whitespace-nowrap shadow-2xl shadow-black/50'
+                ? 'h-18 px-8 rounded-2xl absolute min-w-85 whitespace-nowrap shadow-2xl shadow-black/50'
                 : 'h-9 px-4 rounded-[18px] absolute min-w-0 w-auto max-w-full shadow-none',
             )}
             onMouseEnter={() => setIsInfoHovered(true)}
             onMouseLeave={() => setIsInfoHovered(false)}
             style={{
-              top: '10px',
+              top: '6px',
               transform: 'translateX(-50%)',
               left: '50%',
               zIndex: isExpanded ? 50 : 0,
@@ -408,6 +435,29 @@ const EditorToolbar = memo(
                 </Text>
               )}
 
+              {variantOptions.length > 0 && (
+                <div className="flex items-center ml-2 shrink-0 border border-text-secondary/20 rounded-full overflow-hidden">
+                  {variantOptions.map((v) => {
+                    const isActive = v.path === selectedImage.path;
+                    return (
+                      <button
+                        key={v.path}
+                        disabled={isActive}
+                        className={clsx(
+                          'px-2.5 py-1 text-[11px] font-medium transition-colors',
+                          isActive ? 'bg-surface text-text-primary' : 'text-text-secondary hover:bg-surface/50',
+                        )}
+                        data-tooltip={t('editor.toolbar.switchToVariant', { label: v.label })}
+                        onClick={(e) => onImageSelect?.(v.path, e)}
+                        onKeyDown={handleButtonKeyDown}
+                      >
+                        {v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <div
                 className={clsx(
                   'transition-all duration-300 ease-out overflow-hidden whitespace-nowrap shrink-0',
@@ -432,8 +482,13 @@ const EditorToolbar = memo(
                   isLoaderVisible ? 'max-w-4 opacity-100 ml-2' : 'max-w-0 opacity-0 ml-0',
                   disableLoaderTransition ? 'transition-none' : 'transition-all duration-300',
                 )}
+                onTransitionEnd={(e) => {
+                  if (e.propertyName === 'opacity' && !isLoaderVisible) {
+                    setIsLoaderMounted(false);
+                  }
+                }}
               >
-                <Loader2 size={12} className="text-text-secondary animate-spin" />
+                {isLoaderMounted && <Loader2 size={12} className="text-text-secondary animate-spin" />}
               </div>
             </div>
 
@@ -536,6 +591,7 @@ const EditorToolbar = memo(
                 setIsHistoryVisible((prev) => !prev);
               }}
               data-tooltip={t('editor.toolbar.tooltips.undo')}
+              data-bench-id="undo"
             >
               <Undo size={20} />
             </button>
