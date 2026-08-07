@@ -117,11 +117,11 @@ function App() {
     leftPanelWidth,
     rightPanelWidth,
     compactEditorPanelHeightOverride,
-    activeRightPanel,
+    activePanel,
     activeLayoutDragItem,
     isSettingsOpen,
     setUI,
-    setRightPanel,
+    setPanel,
     setLayoutDragItem,
     movePanel,
   } = useUIStore(
@@ -136,11 +136,11 @@ function App() {
       leftPanelWidth: state.leftPanelWidth,
       rightPanelWidth: state.rightPanelWidth,
       compactEditorPanelHeightOverride: state.compactEditorPanelHeightOverride,
-      activeRightPanel: state.activeRightPanel,
+      activePanel: state.activePanel,
       activeLayoutDragItem: state.activeLayoutDragItem,
       isSettingsOpen: state.isSettingsOpen,
       setUI: state.setUI,
-      setRightPanel: state.setRightPanel,
+      setPanel: state.setPanel,
       setLayoutDragItem: state.setLayoutDragItem,
       movePanel: state.movePanel,
     })),
@@ -460,12 +460,12 @@ function App() {
 
   useEffect(() => {
     if (
-      (activeRightPanel !== Panel.Masks || !activeMaskContainerId) &&
-      (activeRightPanel !== Panel.Ai || !activeAiPatchContainerId)
+      (activePanel !== Panel.Masks || !activeMaskContainerId) &&
+      (activePanel !== Panel.Ai || !activeAiPatchContainerId)
     ) {
       setEditor({ isMaskControlHovered: false });
     }
-  }, [activeRightPanel, activeMaskContainerId, activeAiPatchContainerId, setEditor]);
+  }, [activePanel, activeMaskContainerId, activeAiPatchContainerId, setEditor]);
 
   useEffect(() => {
     const unlisten = listen('ai-connector-status-update', (event: any) => {
@@ -503,18 +503,38 @@ function App() {
 
       if (stateKey === 'left') {
         let w = startSize + (moveEvent.clientX - startX);
-        if (w < 200) w = 48;
-        else if (w > 600) w = 600;
-        setUI({ leftPanelWidth: Math.round(w) });
+        if (w < 200) {
+          setUI((state) => ({ uiVisibility: { ...state.uiVisibility, leftPanel: false } }));
+        } else {
+          w = Math.min(w, 600);
+          setUI((state) => ({
+            leftPanelWidth: Math.round(w),
+            uiVisibility: { ...state.uiVisibility, leftPanel: true },
+          }));
+        }
       } else if (stateKey === 'right') {
         let w = startSize - (moveEvent.clientX - startX);
-        if (w < 200) w = 48;
-        else if (w > 600) w = 600;
-        setUI({ rightPanelWidth: Math.round(w) });
+        if (w < 200) {
+          setUI((state) => ({ uiVisibility: { ...state.uiVisibility, rightPanel: false } }));
+        } else {
+          w = Math.min(w, 600);
+          setUI((state) => ({
+            rightPanelWidth: Math.round(w),
+            uiVisibility: { ...state.uiVisibility, rightPanel: true },
+          }));
+        }
       } else if (stateKey === 'bottom') {
-        setUI({
-          bottomPanelHeight: Math.round(Math.max(100, Math.min(startSize - (moveEvent.clientY - startY), 400))),
-        });
+        const newHeight = startSize - (moveEvent.clientY - startY);
+        if (newHeight < 100) {
+          setUI((state) => ({
+            uiVisibility: { ...state.uiVisibility, filmstrip: false },
+          }));
+        } else {
+          setUI((state) => ({
+            bottomPanelHeight: Math.round(Math.min(newHeight, 400)),
+            uiVisibility: { ...state.uiVisibility, filmstrip: true },
+          }));
+        }
       } else if (stateKey === 'compact') {
         setUI({
           compactEditorPanelHeightOverride: Math.round(
@@ -560,12 +580,12 @@ function App() {
     };
   }, [setUI]);
 
-  const handleRightPanelSelect = useCallback(
+  const handlePanelSelect = useCallback(
     (panelId: Panel) => {
-      setRightPanel(panelId);
+      setPanel(panelId);
       setEditor({ activeMaskId: null, activeAiSubMaskId: null, isWbPickerActive: false });
     },
-    [setRightPanel, setEditor],
+    [setPanel, setEditor],
   );
 
   const handleToggleFolder = useCallback(
@@ -607,16 +627,12 @@ function App() {
           return (
             <FolderTree
               isResizing={isResizing}
-              isVisible={true}
               onContextMenu={handleFolderTreeContextMenu}
               onAlbumContextMenu={handleAlbumTreeContextMenu}
               onSelectAlbum={handleSelectAlbum}
               onFolderSelect={(path) => handleSelectSubfolder(path, false)}
               onToggleFolder={handleToggleFolder}
               onOpenFolder={handleOpenFolder}
-              setIsVisible={(value: boolean) =>
-                setUI((state) => ({ uiVisibility: { ...state.uiVisibility, folderTree: value } }))
-              }
               style={{ width: '100%', height: '100%' }}
               isInstantTransition={isInstantTransition}
             />
@@ -695,6 +711,8 @@ function App() {
     }
   };
   const ActiveOverlayIcon = activeLayoutDragItem ? PANEL_ICONS[activeLayoutDragItem] : null;
+  const effectiveLeftWidth = uiVisibility.leftPanel ? leftPanelWidth : 48;
+  const effectiveRightWidth = uiVisibility.rightPanel ? rightPanelWidth : 48;
 
   return (
     <>
@@ -713,15 +731,17 @@ function App() {
           isWgpuActive ? 'bg-transparent' : 'bg-bg-primary',
         )}
       >
-        <div
-          className={clsx(
-            'shrink-0 overflow-hidden z-50',
-            !isInstantTransition && 'transition-all duration-300 ease-in-out',
-            isFullScreen ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[60px] opacity-100',
-          )}
-        >
-          {appSettings?.decorations || (!isWindowFullScreen && <TitleBar />)}
-        </div>
+        {!isAndroid && (
+          <div
+            className={clsx(
+              'shrink-0 overflow-hidden z-50',
+              !isInstantTransition && 'transition-all duration-300 ease-in-out',
+              isFullScreen ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-15 opacity-100',
+            )}
+          >
+            {appSettings?.decorations || (!isWindowFullScreen && <TitleBar />)}
+          </div>
+        )}
         <div
           className={clsx(
             'flex-1 flex flex-col min-h-0',
@@ -734,11 +754,11 @@ function App() {
               {!shouldHideFolderTree && hasMainContent && (
                 <SidePanelArea
                   side="left"
-                  width={leftPanelWidth}
+                  width={effectiveLeftWidth}
                   topRegion="leftTop"
                   bottomRegion="leftBottom"
                   renderPanel={renderAppPanel}
-                  onWidthChange={createResizeHandler('left', leftPanelWidth)}
+                  onWidthChange={createResizeHandler('left', effectiveLeftWidth)}
                   isResizing={isResizing}
                 />
               )}
@@ -751,30 +771,45 @@ function App() {
                     onDone={finishExternalEdit}
                   />
                 )}
-                {activeView === 'editor' && selectedImage ? (
-                  <EditorView
-                    transformWrapperRef={transformWrapperRef}
-                    isResizing={isResizing}
-                    isCompactPortrait={isCompactPortrait}
-                    isAndroid={isAndroid}
-                    compactEditorPanelHeight={compactEditorPanelHeight}
-                    compactEditorPanelCollapsedHeight={compactEditorPanelCollapsedHeight}
-                    thumbnailAspectRatio={thumbnailAspectRatio}
-                    sortedImageList={sortedImageList}
-                    createResizeHandler={createResizeHandler}
-                    handleBackToLibrary={handleBackToLibrary}
-                    handleEditorContextMenu={handleEditorContextMenu}
-                    handleThumbnailContextMenu={handleThumbnailContextMenu}
-                    handleImageClick={handleImageClick}
-                    handleClearSelection={handleClearSelection}
-                    handleCopyAdjustments={handleCopyAdjustments}
-                    handlePasteAdjustments={handlePasteAdjustments}
-                    handleRate={handleRate}
-                    handleZoomChange={handleZoomChange}
-                    handleRightPanelSelect={handleRightPanelSelect}
-                    requestThumbnails={requestThumbnails}
-                  />
-                ) : (
+                <div
+                  className={clsx(
+                    'flex-1 flex flex-col min-w-0 h-full',
+                    activeView === 'editor' && selectedImage ? 'flex' : 'hidden',
+                  )}
+                >
+                  {selectedImage && (
+                    <EditorView
+                      transformWrapperRef={transformWrapperRef}
+                      isResizing={isResizing}
+                      isCompactPortrait={isCompactPortrait}
+                      isAndroid={isAndroid}
+                      compactEditorPanelHeight={compactEditorPanelHeight}
+                      compactEditorPanelCollapsedHeight={compactEditorPanelCollapsedHeight}
+                      thumbnailAspectRatio={thumbnailAspectRatio}
+                      sortedImageList={sortedImageList}
+                      createResizeHandler={createResizeHandler}
+                      handleBackToLibrary={handleBackToLibrary}
+                      handleEditorContextMenu={handleEditorContextMenu}
+                      handleThumbnailContextMenu={handleThumbnailContextMenu}
+                      handleMainLibraryContextMenu={handleMainLibraryContextMenu}
+                      handleImageClick={handleImageClick}
+                      handleClearSelection={handleClearSelection}
+                      handleCopyAdjustments={handleCopyAdjustments}
+                      handlePasteAdjustments={handlePasteAdjustments}
+                      handleRate={handleRate}
+                      handleZoomChange={handleZoomChange}
+                      handlePanelSelect={handlePanelSelect}
+                      requestThumbnails={requestThumbnails}
+                      renderAppPanel={renderAppPanel}
+                    />
+                  )}
+                </div>
+                <div
+                  className={clsx(
+                    'flex-1 flex flex-col min-w-0 h-full',
+                    activeView === 'editor' && selectedImage ? 'hidden' : 'flex',
+                  )}
+                >
                   <LibraryView
                     sortedImageList={sortedImageList}
                     groupBadgeInfo={groupBadgeInfo}
@@ -801,7 +836,7 @@ function App() {
                     handleResetAdjustments={handleResetAdjustments}
                     requestThumbnails={requestThumbnails}
                   />
-                )}
+                </div>
                 {isSettingsOpen && appSettings && hasRoots && (
                   <div className="absolute inset-0 z-50 flex bg-bg-secondary rounded-lg">
                     <div className="w-full h-full flex flex-col p-4 lg:p-8 overflow-y-auto custom-scrollbar">
@@ -819,11 +854,11 @@ function App() {
               {!isAndroid && hasMainContent && (
                 <SidePanelArea
                   side="right"
-                  width={rightPanelWidth}
+                  width={effectiveRightWidth}
                   topRegion="rightTop"
                   bottomRegion="rightBottom"
                   renderPanel={renderAppPanel}
-                  onWidthChange={createResizeHandler('right', rightPanelWidth)}
+                  onWidthChange={createResizeHandler('right', effectiveRightWidth)}
                   isResizing={isResizing}
                 />
               )}

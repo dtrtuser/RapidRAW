@@ -205,7 +205,9 @@ export default function LibraryGrid(props: any) {
       const ro = new ResizeObserver((entries) => {
         const entry = entries[0];
         if (entry) {
-          const { height, width } = entry.contentRect;
+          const height = Math.round(entry.contentRect.height);
+          const width = Math.round(entry.contentRect.width);
+
           setGridSize((prev) => (prev.height === height && prev.width === width ? prev : { height, width }));
         }
       });
@@ -561,10 +563,7 @@ export default function LibraryGrid(props: any) {
             onSortChange={handleHeaderSort}
           />
         )}
-        <div
-          key={`${gridSize.width}-${thumbnailSize}-${libraryViewMode}-${sortCriteria.key}-${sortCriteria.order}-${thumbnailAspectRatio}`}
-          style={{ height: gridData.isListView ? gridSize.height - 36 : gridSize.height, width: gridSize.width }}
-        >
+        <div style={{ height: gridData.isListView ? gridSize.height - 36 : gridSize.height, width: gridSize.width }}>
           <List
             listRef={setListHandle}
             rowCount={gridData.rows.length}
