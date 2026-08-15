@@ -818,7 +818,6 @@ fn apply_sharpen(
     color: vec3<f32>,
     b1_in: vec3<f32>,
     b2_in: vec3<f32>,
-    b3_in: vec3<f32>,
     coords_i: vec2<i32>,
     amount: f32,
     threshold: f32,
@@ -841,19 +840,16 @@ fn apply_sharpen(
     let l = select(get_luma(color_enc), sqrt(max(get_luma(color), 0.0)), is_raw == 1u);
     let l1 = sharpen_perc(b1_in, is_raw);
     let l2 = sharpen_perc(b2_in, is_raw);
-    let l3 = sharpen_perc(b3_in, is_raw);
 
     let d0 = l  - l1;
     let d1 = l1 - l2;
-    let d2 = l2 - l3;
 
     let t = max(threshold * 0.15, 1e-4);
     let g0 = smoothstep(t * 0.20, t * 0.85, abs(d0));
     let g1 = smoothstep(t * 0.12, t * 0.55, abs(d1));
 
     let boost = (d0 * 1.20 * g0
-               + d1 * 0.60 * g1
-               + d2 * 0.25) * amount;
+               + d1 * 0.70 * g1) * amount;
 
     let dims = vec2<i32>(textureDimensions(input_texture));
     let max_idx = dims - vec2<i32>(1);
@@ -922,13 +918,13 @@ fn apply_sharpen(
 
     let shadow_floor = select(0.03, 0.10, is_raw == 1u);
     let prot = smoothstep(0.0, shadow_floor, l) * (1.0 - smoothstep(0.92, 1.0, l));
-    l_new = mix(l, l_new, prot);
+    l_new = max(mix(l, l_new, prot), 0.0);
 
     let ratio = l_new / max(l, 1e-4);
     if (is_raw == 1u) {
         return color * (ratio * ratio);
     }
-    return srgb_to_linear(color_enc * ratio);
+    return srgb_to_linear(max(color_enc * ratio, vec3<f32>(0.0)));
 }
 
 fn apply_centre_local_contrast(
@@ -1726,7 +1722,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     locally_contrasted_rgb = apply_sharpen(
         locally_contrasted_rgb,
-        sharpness_blurred, tonal_blurred, clarity_blurred,
+        sharpness_blurred, tonal_blurred,
         absolute_coord_i, t_sharpness, t_sharp_thresh, is_raw
     );
 
