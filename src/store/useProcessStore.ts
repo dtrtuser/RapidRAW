@@ -15,6 +15,7 @@ interface ProcessState {
   isIndexing: boolean;
   indexingProgress: Progress;
   thumbnails: Record<string, string>;
+  mediumThumbnails: Record<string, string>;
   thumbnailProgress: Progress;
   previews: Record<string, { url: string; thumbKey: string; timestamp: number }>;
   aiModelDownloadStatus: string | null;
@@ -44,6 +45,7 @@ export const useProcessStore = create<ProcessState>((set, get) => ({
   isIndexing: false,
   indexingProgress: { current: 0, total: 0 },
   thumbnails: {},
+  mediumThumbnails: {},
   thumbnailProgress: { current: 0, total: 0 },
   previews: {},
   aiModelDownloadStatus: null,

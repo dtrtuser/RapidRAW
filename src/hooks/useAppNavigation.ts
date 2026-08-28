@@ -67,7 +67,11 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
     if (transformWrapperRef.current) {
       transformWrapperRef.current.resetTransform(0);
     }
-    useEditorStore.getState().setEditor({ zoom: 1 });
+    useEditorStore.getState().setEditor({
+      zoom: 1,
+      showOriginal: false,
+      previewOverride: null,
+    });
 
     debouncedSave.flush();
     debouncedSetHistory.cancel();
@@ -97,6 +101,9 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
       if (selectedImage?.path && cachedEditStateRef.current) {
         globalImageCache.set(selectedImage.path, cachedEditStateRef.current);
       }
+
+      const cachedThumb = useProcessStore.getState().thumbnails[path];
+      const cachedMedium = useProcessStore.getState().mediumThumbnails[path] || cachedThumb;
 
       const cached = globalImageCache.get(path);
       const isFrontendCached = Boolean(cached && cached.selectedImage?.isReady);
@@ -130,7 +137,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
         activeAiPatchContainerId: null,
         activeAiSubMaskId: null,
         isWbPickerActive: false,
-        transformedOriginalUrl: null,
+        previewOverride: null,
       });
 
       setUI({
@@ -142,7 +149,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
         setEditor({
           selectedImage: {
             ...cached.selectedImage,
-            thumbnailUrl: useProcessStore.getState().thumbnails[path] || cached.selectedImage.thumbnailUrl,
+            thumbnailUrl: cachedMedium || cached.selectedImage.thumbnailUrl,
           },
           originalSize: cached.originalSize,
           previewSize: cached.previewSize,
@@ -208,9 +215,8 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
           isRaw: false,
           isReady: false,
           metadata: null,
-          originalUrl: null,
           path,
-          thumbnailUrl: useProcessStore.getState().thumbnails[path],
+          thumbnailUrl: cachedMedium,
           width: 0,
         },
         originalSize: { width: 0, height: 0 },

@@ -29,9 +29,7 @@ export function useImageProcessing(
   const displaySize = useEditorStore((state) => state.displaySize);
   const baseRenderSize = useEditorStore((state) => state.baseRenderSize);
   const originalSize = useEditorStore((state) => state.originalSize);
-  const showOriginal = useEditorStore((state) => state.showOriginal);
   const isSliderDragging = useEditorStore((state) => state.isSliderDragging);
-  const transformedOriginalUrl = useEditorStore((state) => state.transformedOriginalUrl);
   const setEditor = useEditorStore((state) => state.setEditor);
 
   const activeView = useUIStore((state) => state.activeView);
@@ -40,8 +38,8 @@ export function useImageProcessing(
   const multiSelectedPaths = useLibraryStore((state) => state.multiSelectedPaths);
 
   const inFlightCountRef = useRef(0);
+  const lastAnalyticsTimeRef = useRef<number>(0);
   const pendingApplyRef = useRef<{ adjustments: Adjustments; targetRes?: number } | null>(null);
-  const currentOriginalResRef = useRef<number>(0);
   const dragIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeWaveformChannelRef = useRef(activeWaveformChannel);
   activeWaveformChannelRef.current = activeWaveformChannel;
@@ -99,10 +97,10 @@ export function useImageProcessing(
       return null;
     }
 
-    let roiX = (intersectLeft - imgLeft) / baseW;
-    let roiY = (intersectTop - imgTop) / baseH;
-    let roiW = (intersectRight - intersectLeft) / baseW;
-    let roiH = (intersectBottom - intersectTop) / baseH;
+    const roiX = (intersectLeft - imgLeft) / baseW;
+    const roiY = (intersectTop - imgTop) / baseH;
+    const roiW = (intersectRight - intersectLeft) / baseW;
+    const roiH = (intersectBottom - intersectTop) / baseH;
 
     const newRoiX = roiX - paddingX;
     const newRoiY = roiY - paddingY;
@@ -123,6 +121,18 @@ export function useImageProcessing(
     async (currentAdjustments: Adjustments, dragging: boolean = false, targetRes?: number) => {
       const currentPath = selectedImage?.path;
       if (!currentPath) return;
+
+      let shouldRequestAnalytics = false;
+      if (dragging) {
+        const now = performance.now();
+        if (now - lastAnalyticsTimeRef.current > 33.33) {
+          shouldRequestAnalytics = true;
+          lastAnalyticsTimeRef.current = now;
+        }
+      } else {
+        shouldRequestAnalytics = true;
+        lastAnalyticsTimeRef.current = 0;
+      }
 
       const payload = structuredClone(currentAdjustments);
       const { patchesSentToBackend } = useEditorStore.getState();
@@ -178,6 +188,7 @@ export function useImageProcessing(
           isInteractive: dragging,
           targetResolution: targetRes || null,
           roi: roi || null,
+          requestAnalytics: shouldRequestAnalytics,
           computeWaveform: !!isWaveformVisible,
           activeWaveformChannel: activeWaveformChannelRef.current || null,
         });
@@ -352,32 +363,15 @@ export function useImageProcessing(
 
   const requestHiFiZoom = useMemo(
     () =>
-      debounce((currentAdjustments: Adjustments, targetRes: number) => {
+      debounce((targetRes: number) => {
         if (targetRes > currentResRef.current) {
           currentResRef.current = targetRes;
-          applyAdjustments(currentAdjustments, false, targetRes);
+          const { adjustments, previewOverride } = useEditorStore.getState();
+          const renderAdjustments = previewOverride ?? adjustments;
+          applyAdjustments(renderAdjustments, false, targetRes);
         }
       }, 50),
     [applyAdjustments, currentResRef],
-  );
-
-  const requestHiFiOriginalZoom = useMemo(
-    () =>
-      debounce(async (currentAdjustments: Adjustments, targetRes: number) => {
-        if (targetRes > currentOriginalResRef.current) {
-          try {
-            const base64Data: string = await invoke('generate_original_transformed_preview', {
-              jsAdjustments: currentAdjustments,
-              targetResolution: targetRes,
-            });
-            currentOriginalResRef.current = targetRes;
-            setEditor({ transformedOriginalUrl: base64Data });
-          } catch (e) {
-            console.error('Failed to generate hi-fi original preview:', e);
-          }
-        }
-      }, 200),
-    [setEditor],
   );
 
   useEffect(() => {
@@ -396,7 +390,7 @@ export function useImageProcessing(
       const finalRes = Math.round(baseRes);
 
       if (finalRes > currentResRef.current) {
-        requestHiFiZoom(adjustments, finalRes);
+        requestHiFiZoom(finalRes);
       }
     }
     return () => {
@@ -481,76 +475,6 @@ export function useImageProcessing(
     appSettings?.copyPasteSettings?.includedAdjustments,
     appSettings?.copyPasteSettings?.autoSync,
     isWaveformVisible,
-  ]);
-
-  useEffect(() => {
-    setEditor({ transformedOriginalUrl: null });
-    currentOriginalResRef.current = 0;
-  }, [geometricAdjustmentsKey, selectedImage?.path, setEditor]);
-
-  useEffect(() => {
-    if (
-      activeView === 'editor' &&
-      showOriginal &&
-      selectedImage?.isReady &&
-      displaySize.width > 0 &&
-      !isSliderDragging
-    ) {
-      let targetRes = calculateTargetRes();
-      if (targetRes > currentOriginalResRef.current) {
-        requestHiFiOriginalZoom(adjustments, targetRes);
-      }
-    }
-    return () => {
-      requestHiFiOriginalZoom.cancel();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    activeView,
-    showOriginal,
-    displaySize.width,
-    displaySize.height,
-    calculateTargetRes,
-    selectedImage?.isReady,
-    isSliderDragging,
-    requestHiFiOriginalZoom,
-    originalSize,
-  ]);
-
-  useEffect(() => {
-    let isEffectActive = true;
-    const generate = async () => {
-      if (activeView === 'editor' && showOriginal && selectedImage?.path && !transformedOriginalUrl) {
-        try {
-          const targetRes = calculateTargetRes();
-          const base64Data: string = await invoke('generate_original_transformed_preview', {
-            jsAdjustments: adjustments,
-            targetResolution: targetRes,
-          });
-          if (isEffectActive) {
-            currentOriginalResRef.current = targetRes;
-            setEditor({ transformedOriginalUrl: base64Data });
-          }
-        } catch (e) {
-          if (isEffectActive) {
-            console.error('Failed to generate original preview:', e);
-            setEditor({ showOriginal: false });
-          }
-        }
-      }
-    };
-    generate();
-    return () => {
-      isEffectActive = false;
-    };
-  }, [
-    activeView,
-    showOriginal,
-    selectedImage?.path,
-    adjustments,
-    transformedOriginalUrl,
-    calculateTargetRes,
-    setEditor,
   ]);
 
   return {

@@ -123,6 +123,7 @@ pub fn all_available_adjustments() -> HashSet<String> {
         "lutPath",
         "lutSize",
         "lutData",
+        "lutIsSceneReferred",
         "glowAmount",
         "halationAmount",
         "flareAmount",
@@ -308,14 +309,17 @@ pub struct WorkspaceState {
 impl Default for WorkspaceState {
     fn default() -> Self {
         let mut panel_layout = HashMap::new();
-        panel_layout.insert(
-            "leftTop".to_string(),
-            vec![
-                "metadata".to_string(),
-                "folderTree".to_string(),
-                "export".to_string(),
-            ],
-        );
+        #[allow(unused)]
+        let mut left_top = vec![
+            "metadata".to_string(),
+            "folderTree".to_string(),
+            "export".to_string(),
+        ];
+
+        #[cfg(feature = "tethering")]
+        left_top.push("tethering".to_string());
+
+        panel_layout.insert("leftTop".to_string(), left_top);
         panel_layout.insert("leftBottom".to_string(), vec![]);
 
         panel_layout.insert(
@@ -398,7 +402,9 @@ pub struct AppSettings {
     pub pinned_folders: Vec<String>,
     pub editor_preview_resolution: Option<u32>,
     #[serde(default)]
-    pub thumbnail_resolution: Option<u32>,
+    pub small_thumbnail_resolution: Option<u32>,
+    #[serde(default)]
+    pub medium_thumbnail_resolution: Option<u32>,
     #[serde(default)]
     pub enable_zoom_hifi: Option<bool>,
     #[serde(default)]
@@ -526,7 +532,8 @@ impl Default for AppSettings {
             last_root_path: None,
             root_folders: Vec::new(),
             pinned_folders: Vec::new(),
-            thumbnail_resolution: Some(720),
+            small_thumbnail_resolution: Some(480),
+            medium_thumbnail_resolution: Some(1280),
             #[cfg(target_os = "android")]
             editor_preview_resolution: Some(1280),
             #[cfg(not(target_os = "android"))]
@@ -625,6 +632,11 @@ pub fn get_settings_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
     }
 
     Ok(settings_dir.join("settings.json"))
+}
+
+#[tauri::command]
+pub fn is_tethering_supported() -> bool {
+    cfg!(feature = "tethering")
 }
 
 #[tauri::command]

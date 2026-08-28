@@ -45,6 +45,8 @@ import Text from '../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../types/typography';
 import { useOsPlatform } from '../../hooks/useOsPlatform';
 import { open } from '@tauri-apps/plugin-shell';
+import { RotateCcw } from 'lucide-react';
+import { useUIStore } from '../../store/useUIStore';
 
 interface ConfirmModalState {
   confirmText: string;
@@ -121,11 +123,20 @@ const resolutions: OptionItem<number>[] = [
   { value: 3840, label: '3840px' },
 ];
 
-const thumbnailResolutions: OptionItem<number>[] = [
+const smallThumbnailResolutions: OptionItem<number>[] = [
+  { value: 240, label: '240px' },
+  { value: 360, label: '360px' },
+  { value: 480, label: '480px' },
   { value: 640, label: '640px' },
   { value: 720, label: '720px' },
-  { value: 960, label: '960px' },
-  { value: 1080, label: '1080px' },
+];
+
+const mediumThumbnailResolutions: OptionItem<number>[] = [
+  { value: 720, label: '720px' },
+  { value: 1024, label: '1024px' },
+  { value: 1280, label: '1280px' },
+  { value: 1440, label: '1440px' },
+  { value: 1920, label: '1920px' },
 ];
 
 const zoomMultiplierOptions: OptionItem<number>[] = [
@@ -528,10 +539,14 @@ export default function SettingsPanel({
   const [tempLensMaker, setTempLensMaker] = useState<string>('');
   const [tempLensModel, setTempLensModel] = useState<string>('');
 
+  const [isResettingLayout, setIsResettingLayout] = useState(false);
+  const [layoutResetMessage, setLayoutResetMessage] = useState('');
+
   const osPlatform = useOsPlatform();
   const [processingSettings, setProcessingSettings] = useState({
     editorPreviewResolution: appSettings?.editorPreviewResolution || 1920,
-    thumbnailResolution: appSettings?.thumbnailResolution || 720,
+    smallThumbnailResolution: appSettings?.smallThumbnailResolution || 480,
+    mediumThumbnailResolution: appSettings?.mediumThumbnailResolution || 1280,
     rawHighlightCompression: appSettings?.rawHighlightCompression ?? 2.5,
     processingBackend: appSettings?.processingBackend || 'auto',
     linuxGpuOptimization: appSettings?.linuxGpuOptimization ?? false,
@@ -639,7 +654,8 @@ export default function SettingsPanel({
     }
     setProcessingSettings({
       editorPreviewResolution: appSettings?.editorPreviewResolution || 1920,
-      thumbnailResolution: appSettings?.thumbnailResolution || 720,
+      smallThumbnailResolution: appSettings?.smallThumbnailResolution || 480,
+      mediumThumbnailResolution: appSettings?.mediumThumbnailResolution || 1280,
       rawHighlightCompression: appSettings?.rawHighlightCompression ?? 2.5,
       processingBackend: appSettings?.processingBackend || 'auto',
       linuxGpuOptimization: appSettings?.linuxGpuOptimization ?? false,
@@ -778,6 +794,41 @@ export default function SettingsPanel({
         setClearMessage('');
       }, EXECUTE_TIMEOUT);
     }
+  };
+
+  const executeResetLayout = async () => {
+    setIsResettingLayout(true);
+    setLayoutResetMessage(t('settings.data.statuses.resettingLayout'));
+    try {
+      const resetWorkspaceLayout = useUIStore.getState().resetWorkspaceLayout;
+      const defaultWorkspace = resetWorkspaceLayout(false);
+
+      await onSettingsChange({
+        ...appSettings,
+        workspace: defaultWorkspace,
+      });
+
+      setLayoutResetMessage(t('settings.data.statuses.layoutResetSuccess'));
+    } catch (err: any) {
+      console.error('Failed to reset workspace layout:', err);
+      setLayoutResetMessage(`Error: ${err}`);
+    } finally {
+      setTimeout(() => {
+        setIsResettingLayout(false);
+        setLayoutResetMessage('');
+      }, EXECUTE_TIMEOUT);
+    }
+  };
+
+  const handleResetLayout = () => {
+    setConfirmModalState({
+      confirmText: t('settings.data.modals.confirmResetLayout'),
+      confirmVariant: 'destructive',
+      isOpen: true,
+      message: t('settings.data.modals.resetLayoutMessage'),
+      onConfirm: executeResetLayout,
+      title: t('settings.data.modals.confirmResetLayoutTitle'),
+    });
   };
 
   const handleClearSidecars = () => {
@@ -1588,6 +1639,17 @@ export default function SettingsPanel({
                       </li>
                       <li>
                         <a
+                          href="https://github.com/andreavolpato/spektrafilm"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-accent hover:underline"
+                        >
+                          spektrafilm
+                        </a>
+                        : {t('settings.thanks.list.spektrafilm')}
+                      </li>
+                      <li>
+                        <a
                           href="https://github.com/marcinz606/NegPy"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -1651,6 +1713,17 @@ export default function SettingsPanel({
                           nind-denoise
                         </a>
                         : {t('settings.thanks.list.nind')}
+                      </li>
+                      <li>
+                        <a
+                          href="http://gphoto.org/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-accent hover:underline"
+                        >
+                          libgphoto2
+                        </a>
+                        : {t('settings.thanks.list.libgphoto2')}
                       </li>
                       <li>
                         <a
@@ -1833,13 +1906,25 @@ export default function SettingsPanel({
                       </div>
 
                       <SettingItem
-                        description={t('settings.processing.thumbnailResDesc')}
-                        label={t('settings.processing.thumbnailRes')}
+                        description={t('settings.processing.smallThumbnailResDesc')}
+                        label={t('settings.processing.smallThumbnailRes')}
                       >
                         <Dropdown
-                          onChange={(value: any) => handleProcessingSettingChange('thumbnailResolution', value)}
-                          options={thumbnailResolutions}
-                          value={processingSettings.thumbnailResolution}
+                          onChange={(value: any) => handleProcessingSettingChange('smallThumbnailResolution', value)}
+                          options={smallThumbnailResolutions}
+                          value={processingSettings.smallThumbnailResolution}
+                          triggerClassName="bg-bg-primary"
+                        />
+                      </SettingItem>
+
+                      <SettingItem
+                        description={t('settings.processing.mediumThumbnailResDesc')}
+                        label={t('settings.processing.mediumThumbnailRes')}
+                      >
+                        <Dropdown
+                          onChange={(value: any) => handleProcessingSettingChange('mediumThumbnailResolution', value)}
+                          options={mediumThumbnailResolutions}
+                          value={processingSettings.mediumThumbnailResolution}
                           triggerClassName="bg-bg-primary"
                         />
                       </SettingItem>
@@ -2312,6 +2397,16 @@ export default function SettingsPanel({
                         isProcessing={isClearing}
                         message={clearMessage}
                         title={t('settings.data.clearSidecars')}
+                      />
+
+                      <DataActionItem
+                        buttonAction={handleResetLayout}
+                        buttonText={t('settings.data.resetLayoutButton')}
+                        description={t('settings.data.resetLayoutDesc')}
+                        icon={<RotateCcw size={16} className="mr-2" />}
+                        isProcessing={isResettingLayout}
+                        message={layoutResetMessage}
+                        title={t('settings.data.resetLayoutTitle')}
                       />
 
                       <DataActionItem

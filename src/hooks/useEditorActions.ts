@@ -38,7 +38,10 @@ export function useEditorActions() {
         const prev = state.adjustments;
         const newAdjustments = typeof value === 'function' ? value(prev) : { ...prev, ...value };
         debouncedSetHistory(newAdjustments);
-        return { adjustments: newAdjustments };
+        return {
+          adjustments: newAdjustments,
+          ...(state.showOriginal ? { showOriginal: false, previewOverride: null } : {}),
+        };
       });
     },
     [setEditor],
@@ -82,21 +85,69 @@ export function useEditorActions() {
     }
   }, [setAdjustments]);
 
+  const toggleShowOriginal = useCallback(() => {
+    setEditor((state) => {
+      const isShowing = !state.showOriginal;
+
+      if (isShowing) {
+        const override = { ...INITIAL_ADJUSTMENTS };
+        const geometryKeys: Array<keyof Adjustments> = [
+          'crop',
+          'rotation',
+          'flipHorizontal',
+          'flipVertical',
+          'orientationSteps',
+          'aspectRatio',
+          'transformDistortion',
+          'transformVertical',
+          'transformHorizontal',
+          'transformRotate',
+          'transformAspect',
+          'transformScale',
+          'transformXOffset',
+          'transformYOffset',
+          'lensDistortionAmount',
+          'lensVignetteAmount',
+          'lensTcaAmount',
+          'lensDistortionParams',
+          'lensMaker',
+          'lensModel',
+          'lensDistortionEnabled',
+          'lensTcaEnabled',
+          'lensVignetteEnabled',
+        ];
+
+        geometryKeys.forEach((key) => {
+          (override as any)[key] = state.adjustments[key];
+        });
+
+        return { showOriginal: true, previewOverride: override };
+      } else {
+        return { showOriginal: false, previewOverride: null };
+      }
+    });
+  }, [setEditor]);
+
   const handleLutSelect = useCallback(
-    async (path: string) => {
+    async (path: string, isBuiltIn: boolean = false) => {
       const isAndroid = useSettingsStore.getState().osPlatform === 'android';
       try {
         const result: { size: number } = await invoke('load_and_parse_lut', { path });
-        let name = isAndroid && path.startsWith('content://')
-          ? await invoke<string>('resolve_android_content_uri_name', { uriStr: path })
-          : path.split(/[\\/]/).pop() || 'LUT';
+        const name =
+          isAndroid && path.startsWith('content://')
+            ? await invoke<string>('resolve_android_content_uri_name', { uriStr: path })
+            : path.split(/[\\/]/).pop() || 'LUT';
         setAdjustments((prev: Adjustments) => ({
           ...prev,
           lutPath: path,
           lutName: name,
           lutSize: result.size,
           lutIntensity: 100,
-          sectionVisibility: { ...(prev.sectionVisibility || INITIAL_ADJUSTMENTS.sectionVisibility), effects: true },
+          lutIsSceneReferred: isBuiltIn,
+          sectionVisibility: {
+            ...(prev.sectionVisibility || INITIAL_ADJUSTMENTS.sectionVisibility),
+            effects: true,
+          },
         }));
       } catch (err) {
         toast.error(`Failed to load LUT: ${err}`);
@@ -106,7 +157,7 @@ export function useEditorActions() {
   );
 
   const setLutPreviewOverride = useCallback(
-    (path: string | null) => {
+    (path: string | null, isBuiltIn: boolean = false) => {
       setEditor((state) => {
         if (!path) return { previewOverride: null };
         const name = path.split(/[\\/]/).pop() || 'LUT';
@@ -116,6 +167,7 @@ export function useEditorActions() {
             lutPath: path,
             lutName: name,
             lutIntensity: state.adjustments.lutIntensity,
+            lutIsSceneReferred: isBuiltIn,
           },
         };
       });
@@ -316,5 +368,6 @@ export function useEditorActions() {
     handleCopyAdjustments,
     handlePasteAdjustments,
     handleZoomChange,
+    toggleShowOriginal,
   };
 }

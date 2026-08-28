@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { Stage, Layer, Ellipse, Line, Transformer, Group, Circle, Rect } from 'react-konva';
+import { Stage, Layer, Ellipse, Line, Transformer, Group, Circle, Rect, Arrow } from 'react-konva';
 import { PercentCrop, Crop } from 'react-image-crop';
-import { Stamp, Bandage } from 'lucide-react';
+import { Stamp, Bandage, Spline, BrushCleaning } from 'lucide-react';
 import { Adjustments, AiPatch, Coord, MaskContainer } from '../../../utils/adjustments';
 import { Mask, SubMask, SubMaskMode, ToolType } from '../right/Masks';
 import { AppSettings, BrushSettings, SelectedImage } from '../../ui/AppProperties';
@@ -12,6 +12,7 @@ import { useOsPlatform } from '../../../hooks/useOsPlatform';
 import { useTranslation } from 'react-i18next';
 import type { OverlayMode } from '../right/CropPanel';
 import CompositionOverlays from './overlays/CompositionOverlays';
+import { calculateStraightenAngle } from '../../../utils/cropUtils';
 
 interface CursorPreview {
   visible: boolean;
@@ -49,7 +50,7 @@ interface ImageCanvasProps {
   maskOverlayUrl: string | null;
   onGenerateAiMask(id: string | null, start: Coord, end: Coord): void;
   onLiveMaskPreview?: (previewMaskDef: any) => void;
-  onManualCleanup?(subMaskId: string, sourceX: number, sourceY: number): Promise<void> | void;
+  onDirectPatch?(subMaskId: string, sourceX: number, sourceY: number): Promise<void> | void;
   onQuickErase(subMaskId: string | null, startPoint: Coord, endpoint: Coord): void;
   onSelectAiSubMask(id: string | null): void;
   onSelectMask(id: string | null): void;
@@ -61,7 +62,6 @@ interface ImageCanvasProps {
   setIsMaskHovered(isHovered: boolean): void;
   setIsMaskTouchInteracting(isInteracting: boolean): void;
   showOriginal: boolean;
-  transformedOriginalUrl: string | null;
   uncroppedAdjustedPreviewUrl: string | null;
   updateSubMask(id: string | null, subMask: Partial<SubMask>): void;
   interactivePatch?: { url: string; normX: number; normY: number; normW: number; normH: number } | null;
@@ -187,6 +187,143 @@ const SourcePreviewLine = memo(
           shadowForStrokeEnabled={false}
         />
       </Group>
+    );
+  },
+);
+
+const LiquifyPreviewLine = memo(
+  ({ line, scale, cropX, cropY }: { line: DrawnLine; scale: number; cropX: number; cropY: number }) => {
+    const { flattenedPoints, flowArrows } = useMemo(() => {
+      const rawPts: Array<{ x: number; y: number }> = [];
+      const ptsArray = new Float32Array(line.points.length * 2);
+
+      for (let i = 0; i < line.points.length; i++) {
+        const sx = (line.points[i].x - cropX) * scale;
+        const sy = (line.points[i].y - cropY) * scale;
+        ptsArray[i * 2] = sx;
+        ptsArray[i * 2 + 1] = sy;
+        rawPts.push({ x: sx, y: sy });
+      }
+
+      const arrows: Array<{ startX: number; startY: number; endX: number; endY: number; key: number }> = [];
+      const ARROW_SPACING = 48;
+      const ARROW_HALF_LEN = 4;
+
+      let accumulatedDist = ARROW_SPACING / 2;
+
+      for (let i = 0; i < rawPts.length - 1; i++) {
+        const p1 = rawPts[i];
+        const p2 = rawPts[i + 1];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const segLen = Math.hypot(dx, dy);
+
+        if (segLen < 0.001) continue;
+
+        const dirX = dx / segLen;
+        const dirY = dy / segLen;
+
+        let distOnSeg = ARROW_SPACING - accumulatedDist;
+
+        while (distOnSeg <= segLen) {
+          const cx = p1.x + dirX * distOnSeg;
+          const cy = p1.y + dirY * distOnSeg;
+
+          arrows.push({
+            startX: cx - dirX * ARROW_HALF_LEN,
+            startY: cy - dirY * ARROW_HALF_LEN,
+            endX: cx + dirX * ARROW_HALF_LEN,
+            endY: cy + dirY * ARROW_HALF_LEN,
+            key: arrows.length,
+          });
+
+          distOnSeg += ARROW_SPACING;
+        }
+
+        accumulatedDist = (accumulatedDist + segLen) % ARROW_SPACING;
+      }
+
+      if (arrows.length === 0 && rawPts.length >= 2) {
+        const p1 = rawPts[0];
+        const p2 = rawPts[rawPts.length - 1];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 2) {
+          arrows.push({
+            startX: p1.x,
+            startY: p1.y,
+            endX: p2.x,
+            endY: p2.y,
+            key: 0,
+          });
+        }
+      }
+
+      return {
+        flattenedPoints: Array.from(ptsArray),
+        flowArrows: arrows,
+      };
+    }, [line.points, scale, cropX, cropY]);
+
+    if (flattenedPoints.length < 4) return null;
+
+    return (
+      <Group>
+        <Line
+          lineCap="round"
+          lineJoin="round"
+          points={flattenedPoints}
+          stroke="rgba(255, 255, 255, 0.3)"
+          strokeWidth={1}
+          dash={[3, 3]}
+          strokeScaleEnabled={false}
+          perfectDrawEnabled={false}
+        />
+
+        {flowArrows.map((arr) => (
+          <Arrow
+            key={arr.key}
+            points={[arr.startX, arr.startY, arr.endX, arr.endY]}
+            pointerLength={6}
+            pointerWidth={6}
+            fill="#0ea5e9"
+            stroke="#0ea5e9"
+            strokeWidth={1.5}
+            pointerAtEnding={true}
+            opacity={0.6}
+            strokeScaleEnabled={false}
+            perfectDrawEnabled={false}
+            shadowColor="rgba(0, 0, 0, 0.4)"
+            shadowBlur={2}
+          />
+        ))}
+      </Group>
+    );
+  },
+);
+
+const LiquifyEraserPreviewLine = memo(
+  ({ line, scale, cropX, cropY }: { line: DrawnLine; scale: number; cropX: number; cropY: number }) => {
+    const flattenedPoints = useMemo(() => {
+      const pts = new Float32Array(line.points.length * 2);
+      for (let i = 0; i < line.points.length; i++) {
+        pts[i * 2] = (line.points[i].x - cropX) * scale;
+        pts[i * 2 + 1] = (line.points[i].y - cropY) * scale;
+      }
+      return Array.from(pts);
+    }, [line.points, scale, cropX, cropY]);
+
+    return (
+      <Line
+        lineCap="round"
+        lineJoin="round"
+        points={flattenedPoints}
+        stroke="rgba(244, 63, 94, 0.4)"
+        strokeWidth={line.brushSize * scale}
+        strokeScaleEnabled={false}
+        perfectDrawEnabled={false}
+      />
     );
   },
 );
@@ -696,7 +833,9 @@ const MaskOverlay = memo(
       subMask.type === Mask.Brush ||
       subMask.type === Mask.Flow ||
       subMask.type === Mask.Clone ||
-      subMask.type === Mask.Heal
+      subMask.type === Mask.Heal ||
+      subMask.type === Mask.Liquify ||
+      subMask.type === Mask.Retouch
     ) {
       const { lines = [], sourceX, sourceY } = p;
 
@@ -739,9 +878,17 @@ const MaskOverlay = memo(
           onTouchStart={handleMaskTouchStart}
         >
           <Group visible={showBrushStrokes !== false}>
-            {lines.map((line: DrawnLine, i: number) => (
-              <OptimizedBrushLine key={i} line={line} scale={scale} cropX={cropX} cropY={cropY} />
-            ))}
+            {subMask.type === Mask.Liquify && isSelected
+              ? lines.map((line: DrawnLine, i: number) =>
+                  line.tool === ToolType.Eraser ? (
+                    <LiquifyEraserPreviewLine key={i} line={line} scale={scale} cropX={cropX} cropY={cropY} />
+                  ) : (
+                    <LiquifyPreviewLine key={i} line={line} scale={scale} cropX={cropX} cropY={cropY} />
+                  ),
+                )
+              : lines.map((line: DrawnLine, i: number) => (
+                  <OptimizedBrushLine key={i} line={line} scale={scale} cropX={cropX} cropY={cropY} />
+                ))}
 
             {hasSource &&
               isSelected &&
@@ -1159,7 +1306,7 @@ const ImageCanvas = memo(
     maskOverlayUrl,
     onGenerateAiMask,
     onLiveMaskPreview,
-    onManualCleanup,
+    onDirectPatch,
     onQuickErase,
     onSelectAiSubMask,
     onSelectMask,
@@ -1171,7 +1318,6 @@ const ImageCanvas = memo(
     setIsMaskHovered,
     setIsMaskTouchInteracting,
     showOriginal,
-    transformedOriginalUrl,
     uncroppedAdjustedPreviewUrl,
     updateSubMask,
     isWbPickerActive = false,
@@ -1188,7 +1334,6 @@ const ImageCanvas = memo(
     const [isCropViewVisible, setIsCropViewVisible] = useState(false);
     const cropImageRef = useRef<HTMLImageElement>(null);
     const [displayedMaskUrl, setDisplayedMaskUrl] = useState<string | null>(null);
-    const [originalLoaded, setOriginalLoaded] = useState<boolean>(false);
     const [localInitialDrawParams, setLocalInitialDrawParams] = useState<any>(null);
     const [isMaskInteractionActive, setIsMaskInteractionActive] = useState(false);
     const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
@@ -1222,7 +1367,7 @@ const ImageCanvas = memo(
     const osPlatform = useOsPlatform();
     const modifierKey = osPlatform === 'macos' ? 'Cmd' : 'Ctrl';
 
-    const manualCleanupStateRef = useRef({
+    const directPatchStateRef = useRef({
       inFlight: false,
       pending: false,
       activeId: null as string | null,
@@ -1230,35 +1375,35 @@ const ImageCanvas = memo(
       sourceY: 0,
     });
 
-    const triggerManualCleanup = useCallback(
+    const triggerDirectPatch = useCallback(
       async (activeId: string, sourceX: number, sourceY: number) => {
-        if (!onManualCleanup) return;
+        if (!onDirectPatch) return;
 
-        if (manualCleanupStateRef.current.inFlight) {
-          manualCleanupStateRef.current.pending = true;
-          manualCleanupStateRef.current.activeId = activeId;
-          manualCleanupStateRef.current.sourceX = sourceX;
-          manualCleanupStateRef.current.sourceY = sourceY;
+        if (directPatchStateRef.current.inFlight) {
+          directPatchStateRef.current.pending = true;
+          directPatchStateRef.current.activeId = activeId;
+          directPatchStateRef.current.sourceX = sourceX;
+          directPatchStateRef.current.sourceY = sourceY;
           return;
         }
 
-        manualCleanupStateRef.current.inFlight = true;
-        manualCleanupStateRef.current.pending = false;
+        directPatchStateRef.current.inFlight = true;
+        directPatchStateRef.current.pending = false;
 
         try {
-          await onManualCleanup(activeId, sourceX, sourceY);
+          await onDirectPatch(activeId, sourceX, sourceY);
         } finally {
-          manualCleanupStateRef.current.inFlight = false;
-          if (manualCleanupStateRef.current.pending && manualCleanupStateRef.current.activeId) {
-            triggerManualCleanup(
-              manualCleanupStateRef.current.activeId,
-              manualCleanupStateRef.current.sourceX,
-              manualCleanupStateRef.current.sourceY,
+          directPatchStateRef.current.inFlight = false;
+          if (directPatchStateRef.current.pending && directPatchStateRef.current.activeId) {
+            triggerDirectPatch(
+              directPatchStateRef.current.activeId,
+              directPatchStateRef.current.sourceX,
+              directPatchStateRef.current.sourceY,
             );
           }
         }
       },
-      [onManualCleanup],
+      [onDirectPatch],
     );
 
     const paddingX = imageRenderSize.width * 0.5;
@@ -1450,17 +1595,22 @@ const ImageCanvas = memo(
     const brushStageSize = (brushSettings?.size ?? 0) / effectiveZoomScale;
     const brushImageSpaceSize = brushStageSize / (imageRenderSize.scale || 1);
 
-    const isBrushActive =
-      (isMasking || isAiEditing) &&
-      (activeSubMask?.type === Mask.Brush ||
-        activeSubMask?.type === Mask.Flow ||
-        activeSubMask?.type === Mask.Clone ||
-        activeSubMask?.type === Mask.Heal);
-    const isManualCleanupActive =
+    const isCloneOrHealActive =
       isAiEditing && (activeSubMask?.type === Mask.Clone || activeSubMask?.type === Mask.Heal);
 
-    const isCloneOrHealActive =
-      (isMasking || isAiEditing) && (activeSubMask?.type === Mask.Clone || activeSubMask?.type === Mask.Heal);
+    const isLiquifyActive = isAiEditing && activeSubMask?.type === Mask.Liquify;
+    const isRetouchActive = isAiEditing && activeSubMask?.type === Mask.Retouch;
+
+    const isDirectPatchActive =
+      (isMasking || isAiEditing) &&
+      (activeSubMask?.type === Mask.Clone ||
+        activeSubMask?.type === Mask.Heal ||
+        activeSubMask?.type === Mask.Liquify ||
+        activeSubMask?.type === Mask.Retouch);
+
+    const isBrushActive =
+      (isMasking || isAiEditing) &&
+      (activeSubMask?.type === Mask.Brush || activeSubMask?.type === Mask.Flow || isDirectPatchActive);
 
     const activeLineFlow = activeSubMask?.type === Mask.Flow ? (activeSubMask?.parameters?.flow ?? 10) : undefined;
 
@@ -1578,14 +1728,15 @@ const ImageCanvas = memo(
       return selectedMask ? [...otherMasks, selectedMask] : activeContainer.subMasks;
     }, [activeContainer, activeMaskId, activeAiSubMaskId, isMasking, isAiEditing]);
 
-    const cloneHealMarkers = useMemo(() => {
+    const directPatchMarkers = useMemo(() => {
       const markers: any[] = [];
       if (!adjustments.aiPatches && !adjustments.masks) return markers;
 
       const processContainers = (containers: any[], isAi: boolean) => {
         containers.forEach((container) => {
           container.subMasks.forEach((sm: SubMask) => {
-            if (sm.type !== Mask.Clone && sm.type !== Mask.Heal) return;
+            if (sm.type !== Mask.Clone && sm.type !== Mask.Heal && sm.type !== Mask.Liquify && sm.type !== Mask.Retouch)
+              return;
             const lines = sm.parameters?.lines || [];
             if (lines.length === 0) return;
 
@@ -1612,7 +1763,10 @@ const ImageCanvas = memo(
             let cx = drawingCenterX;
             let cy = drawingCenterY;
 
-            if (sourceX !== undefined && sourceY !== undefined) {
+            if (sm.type === Mask.Liquify || sm.type === Mask.Retouch) {
+              cx = drawingCenterX + 16;
+              cy = drawingCenterY - 16;
+            } else if (sourceX !== undefined && sourceY !== undefined) {
               cx = (drawingCenterX + sourceX) / 2;
               cy = (drawingCenterY + sourceY) / 2;
             }
@@ -1764,7 +1918,7 @@ const ImageCanvas = memo(
           const x = pos.x / scale + cropX;
           const y = pos.y / scale + cropY;
 
-          let newParams = { ...activeSubMask.parameters };
+          const newParams = { ...activeSubMask.parameters };
           newParams.targetX = x;
           newParams.targetY = y;
           newParams.rotation = adjustments.rotation || 0;
@@ -1816,7 +1970,7 @@ const ImageCanvas = memo(
           return;
         }
 
-        if (isManualCleanupActive && activeSubMask) {
+        if (isCloneOrHealActive && activeSubMask) {
           const isCtrlPressedLocal = e.evt.ctrlKey || e.evt.metaKey || (window as any).ctrlKeyDown;
           if (isCtrlPressedLocal || activeSubMask.parameters?.sourceX === undefined) {
             const pos = getCanvasPointer(e.target.getStage());
@@ -1832,8 +1986,8 @@ const ImageCanvas = memo(
                 parameters: { ...activeSubMask.parameters, sourceX: x, sourceY: y },
               });
 
-              if (onManualCleanup && activeSubMask.parameters?.lines?.length > 0) {
-                onManualCleanup(activeId, x, y);
+              if (onDirectPatch && activeSubMask.parameters?.lines?.length > 0) {
+                onDirectPatch(activeId, x, y);
               }
             }
 
@@ -1864,12 +2018,12 @@ const ImageCanvas = memo(
             return;
           }
 
-          const isAltPressed = e.evt.altKey || (window as any).altKeyDown;
+          const isAltPressedLocal = e.evt.altKey || (window as any).altKeyDown;
           let effectiveTool;
 
           if (isAiSubjectActive) {
             effectiveTool = ToolType.AiSeletor;
-          } else if (isAltPressed) {
+          } else if (isAltPressedLocal) {
             effectiveTool = baseTool === ToolType.Brush ? ToolType.Eraser : ToolType.Brush;
           } else {
             effectiveTool = baseTool;
@@ -1925,7 +2079,7 @@ const ImageCanvas = memo(
           activeStrokeIndex.current = null;
           drawingStageRef.current = stage;
 
-          if (isManualCleanupActive) {
+          if (isDirectPatchActive) {
             setIsMaskInteractionActive(true);
           }
 
@@ -1951,7 +2105,9 @@ const ImageCanvas = memo(
         handleWbClick,
         isInitialDrawing,
         isBrushActive,
-        isManualCleanupActive,
+        isCloneOrHealActive,
+        isDirectPatchActive,
+        onDirectPatch,
         activeLineFlow,
         isAiSubjectActive,
         isParametricActive,
@@ -2032,7 +2188,7 @@ const ImageCanvas = memo(
             return;
           }
 
-          let updatedParams = { ...localInitialDrawParams };
+          const updatedParams = { ...localInitialDrawParams };
 
           if (activeSubMask.type === Mask.Radial) {
             updatedParams.radiusX = Math.max(1, Math.abs(x - dragStartPointer.current.x));
@@ -2101,7 +2257,7 @@ const ImageCanvas = memo(
 
           const activeId = isMasking ? activeMaskId : activeAiSubMaskId;
 
-          if (isManualCleanupActive && activeId) {
+          if ((isCloneOrHealActive || isLiquifyActive || isRetouchActive) && activeId) {
             const { scale } = imageRenderSize;
 
             const imageSpaceLine: DrawnLine = {
@@ -2133,8 +2289,12 @@ const ImageCanvas = memo(
 
             const sourceX = activeSubMask?.parameters.sourceX;
             const sourceY = activeSubMask?.parameters.sourceY;
-            if (sourceX !== undefined && sourceY !== undefined) {
-              triggerManualCleanup(activeId, sourceX, sourceY);
+            if (
+              activeSubMask?.type === Mask.Liquify ||
+              activeSubMask?.type === Mask.Retouch ||
+              (sourceX !== undefined && sourceY !== undefined)
+            ) {
+              triggerDirectPatch(activeId, sourceX || 0, sourceY || 0);
             }
           } else if (onLiveMaskPreview && activeContainer && activeSubMask && isBrushActive) {
             const { scale } = imageRenderSize;
@@ -2182,8 +2342,10 @@ const ImageCanvas = memo(
         activeContainer,
         activeSubMask,
         isBrushActive,
-        isManualCleanupActive,
-        onManualCleanup,
+        isCloneOrHealActive,
+        isLiquifyActive,
+        isRetouchActive,
+        triggerDirectPatch,
         activeLineFlow,
         isAiSubjectActive,
         imageRenderSize,
@@ -2252,7 +2414,7 @@ const ImageCanvas = memo(
         const { scale } = imageRenderSize;
         const activeId = isMasking ? activeMaskId : activeAiSubMaskId;
 
-        let startPoint = { x: box.start.x / scale + cropX, y: box.start.y / scale + cropY };
+        const startPoint = { x: box.start.x / scale + cropX, y: box.start.y / scale + cropY };
         let endPoint = { x: box.end.x / scale + cropX, y: box.end.y / scale + cropY };
 
         const dx = box.end.x - box.start.x;
@@ -2331,11 +2493,14 @@ const ImageCanvas = memo(
           };
         }
 
-        if (isManualCleanupActive && activeId) {
+        if (isDirectPatchActive && activeId) {
           const sourceX = activeSubMask?.parameters.sourceX;
           const sourceY = activeSubMask?.parameters.sourceY;
-          if (sourceX !== undefined && sourceY !== undefined) {
-            triggerManualCleanup(activeId, sourceX, sourceY);
+
+          const requiresSource = activeSubMask?.type === Mask.Clone || activeSubMask?.type === Mask.Heal;
+
+          if (!requiresSource || (sourceX !== undefined && sourceY !== undefined)) {
+            triggerDirectPatch(activeId, sourceX || 0, sourceY || 0);
           }
         }
       }
@@ -2350,8 +2515,11 @@ const ImageCanvas = memo(
       imageRenderSize.scale,
       isAiEditing,
       isBrushActive,
-      isManualCleanupActive,
-      triggerManualCleanup,
+      isCloneOrHealActive,
+      isLiquifyActive,
+      isRetouchActive,
+      isDirectPatchActive,
+      triggerDirectPatch,
       activeLineFlow,
       isMasking,
       onGenerateAiMask,
@@ -2426,55 +2594,14 @@ const ImageCanvas = memo(
       isStraightening.current = false;
       if (
         !straightenLine ||
-        (straightenLine.start.x === straightenLine.end.x && straightenLine.start.y === straightenLine.start.y)
+        (straightenLine.start.x === straightenLine.end.x && straightenLine.start.y === straightenLine.end.y)
       ) {
         setStraightenLine(null);
         return;
       }
 
       const { start, end } = straightenLine;
-      const { rotation = 0 } = adjustments;
-      const theta_rad = (rotation * Math.PI) / 180;
-      const cos_t = Math.cos(theta_rad);
-      const sin_t = Math.sin(theta_rad);
-      const width = uncroppedImageRenderSize?.width ?? 0;
-      const height = uncroppedImageRenderSize?.height ?? 0;
-      const cx = width / 2;
-      const cy = height / 2;
-
-      const unrotate = (p: Coord) => {
-        const x = p.x - cx;
-        const y = p.y - cy;
-        return {
-          x: cx + x * cos_t + y * sin_t,
-          y: cy - x * sin_t + y * cos_t,
-        };
-      };
-
-      const start_unrotated = unrotate(start);
-      const end_unrotated = unrotate(end);
-      const dx = end_unrotated.x - start_unrotated.x;
-      const dy = end_unrotated.y - start_unrotated.y;
-      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-      let targetAngle;
-
-      if (angle > -45 && angle <= 45) {
-        targetAngle = 0;
-      } else if (angle > 45 && angle <= 135) {
-        targetAngle = 90;
-      } else if (angle > 135 || angle <= -135) {
-        targetAngle = 180;
-      } else {
-        targetAngle = -90;
-      }
-
-      let correction = targetAngle - angle;
-      if (correction > 180) {
-        correction -= 360;
-      }
-      if (correction < -180) {
-        correction += 360;
-      }
+      const correction = calculateStraightenAngle(end.x - start.x, end.y - start.y);
 
       onStraighten(correction);
       setStraightenLine(null);
@@ -2488,29 +2615,7 @@ const ImageCanvas = memo(
     };
 
     const cropPreviewUrl = uncroppedAdjustedPreviewUrl || selectedImage.thumbnailUrl;
-    const originalSrc = transformedOriginalUrl;
-    const isShowingOriginal = showOriginal && !!originalSrc;
-
-    useEffect(() => {
-      if (!originalSrc) {
-        setOriginalLoaded(false);
-        return;
-      }
-
-      const img = new Image();
-      img.src = originalSrc;
-
-      if (img.complete) {
-        setOriginalLoaded(true);
-      } else {
-        setOriginalLoaded(false);
-        img.onload = () => setOriginalLoaded(true);
-      }
-
-      return () => {
-        img.onload = null;
-      };
-    }, [originalSrc]);
+    const isShowingOriginal = showOriginal;
 
     const currentTarget = finalPreviewUrl || selectedImage.thumbnailUrl;
     const baseIsReady = displayState.base === currentTarget && !displayState.fade;
@@ -2571,9 +2676,9 @@ const ImageCanvas = memo(
       if (isParametricActive) return 'crosshair';
       if (isInitialDrawing) return 'crosshair';
 
-      if (isBrushActive && !isManualCleanupActive) return 'none';
+      if (isBrushActive && !isCloneOrHealActive) return 'none';
 
-      if (isManualCleanupActive) {
+      if (isCloneOrHealActive) {
         if (activeSubMask?.parameters?.sourceX === undefined || isCtrlPressed) {
           const targetSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.8));">
         <circle cx="12" cy="12" r="5" />
@@ -2595,7 +2700,7 @@ const ImageCanvas = memo(
       isWbPickerActive,
       isInitialDrawing,
       isBrushActive,
-      isManualCleanupActive,
+      isCloneOrHealActive,
       activeSubMask,
       isAiSubjectActive,
       isParametricActive,
@@ -2635,7 +2740,7 @@ const ImageCanvas = memo(
     const maskOpacity =
       isShowingOriginal || isSliderDragging || isMaskInteractionActive
         ? 0
-        : isCloneOrHealActive
+        : isDirectPatchActive
           ? hoveredMarkerId === currentActiveSubMaskId || isMaskControlHovered
             ? 1
             : 0
@@ -2721,37 +2826,6 @@ const ImageCanvas = memo(
                 )}
               </svg>
 
-              {originalSrc && (
-                <img
-                  alt="Original"
-                  className={
-                    imageRenderSize.width > 0 && imageRenderSize.height > 0
-                      ? 'pointer-events-none'
-                      : 'absolute inset-0 w-full h-full object-contain pointer-events-none'
-                  }
-                  src={originalSrc}
-                  style={
-                    imageRenderSize.width > 0 && imageRenderSize.height > 0
-                      ? {
-                          position: 'absolute',
-                          left: `${imageRenderSize.offsetX}px`,
-                          top: `${imageRenderSize.offsetY}px`,
-                          width: `${imageRenderSize.width}px`,
-                          height: `${imageRenderSize.height}px`,
-                          imageRendering: isMaxZoom ? 'pixelated' : 'auto',
-                          opacity: isShowingOriginal && originalLoaded ? 1 : 0,
-                          transition: originalLoaded ? 'opacity 150ms ease-in-out' : 'none',
-                          zIndex: 2,
-                        }
-                      : {
-                          imageRendering: isMaxZoom ? 'pixelated' : 'auto',
-                          opacity: isShowingOriginal && originalLoaded ? 1 : 0,
-                          transition: originalLoaded ? 'opacity 150ms ease-in-out' : 'none',
-                          zIndex: 2,
-                        }
-                  }
-                />
-              )}
               {displayedMaskUrl && (
                 <img
                   alt="Mask Overlay"
@@ -2773,7 +2847,7 @@ const ImageCanvas = memo(
 
             <div className="absolute inset-0 pointer-events-none z-50">
               {!isDrawing.current &&
-                cloneHealMarkers.map((m) => {
+                directPatchMarkers.map((m) => {
                   const left = (m.cx - cropX) * imageRenderSize.scale + imageRenderSize.offsetX;
                   const top = (m.cy - cropY) * imageRenderSize.scale + imageRenderSize.offsetY;
 
@@ -2810,7 +2884,15 @@ const ImageCanvas = memo(
                       }}
                     >
                       <div className="p-1.5 rounded-full shadow-md transition-transform hover:scale-110 bg-surface/70 text-text-primary shadow-black/20">
-                        {m.type === Mask.Clone ? <Stamp size={16} /> : <Bandage size={16} />}
+                        {m.type === Mask.Clone ? (
+                          <Stamp size={16} />
+                        ) : m.type === Mask.Heal ? (
+                          <Bandage size={16} />
+                        ) : m.type === Mask.Liquify ? (
+                          <Spline size={16} />
+                        ) : (
+                          <BrushCleaning size={16} />
+                        )}
                       </div>
                     </div>
                   );
@@ -2881,17 +2963,24 @@ const ImageCanvas = memo(
                               ? { ...subMask, parameters: localInitialDrawParams }
                               : subMask;
 
-                          const isCloneOrHeal = renderSubMask.type === Mask.Clone || renderSubMask.type === Mask.Heal;
+                          const isDirectPatch =
+                            renderSubMask.type === Mask.Clone ||
+                            renderSubMask.type === Mask.Heal ||
+                            renderSubMask.type === Mask.Liquify ||
+                            renderSubMask.type === Mask.Retouch;
+
                           const isThisSubMaskActive = renderSubMask.id === activeId;
                           const isActivelyDrawingThis = isThisSubMaskActive && isDrawing.current;
                           const isHoveringThisMarker = hoveredMarkerId === renderSubMask.id;
 
                           let showBrushStrokes = true;
-                          if (isCloneOrHeal) {
+                          if (isDirectPatch) {
                             showBrushStrokes =
                               isActivelyDrawingThis ||
                               isHoveringThisMarker ||
-                              (isThisSubMaskActive && isMaskControlHovered);
+                              (isThisSubMaskActive && isMaskControlHovered) ||
+                              (isThisSubMaskActive &&
+                                (renderSubMask.type === Mask.Liquify || renderSubMask.type === Mask.Retouch));
                           }
 
                           return (
@@ -2935,7 +3024,7 @@ const ImageCanvas = memo(
                       )}
                       {isBrushActive &&
                         cursorPreview.visible &&
-                        (!isManualCleanupActive ||
+                        (!isCloneOrHealActive ||
                           (activeSubMask?.parameters?.sourceX !== undefined && !isCtrlPressed)) && (
                           <Circle
                             {...(brushCursorPreview.colorStops

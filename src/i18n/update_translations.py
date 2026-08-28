@@ -7,91 +7,117 @@ TRANSLATIONS = {
     "ca": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Commutar l'anàlisi al panell d'ajustos"
+                "aiTitle": "Seleccions d'IA",
+                "basicTitle": "Eines bàsiques",
+                "rangeTitle": "Rangs i global"
             }
         }
     },
     "de": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Analyseanzeige im Anpassungen-Panel umschalten"
+                "aiTitle": "KI-Auswahl",
+                "basicTitle": "Basis-Werkzeuge",
+                "rangeTitle": "Bereiche & Global"
             }
         }
     },
     "en": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Toggle analytics in Adjustments panel"
+                "aiTitle": "AI Selections",
+                "basicTitle": "Basic Tools",
+                "rangeTitle": "Ranges & Global"
             }
         }
     },
     "es": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Alternar análisis en el panel de Ajustes"
+                "aiTitle": "Selecciones de IA",
+                "basicTitle": "Herramientas básicas",
+                "rangeTitle": "Rangos y global"
             }
         }
     },
     "fr": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Afficher/Masquer l'analyse dans le panneau Réglages"
+                "aiTitle": "Sélections IA",
+                "basicTitle": "Outils de base",
+                "rangeTitle": "Plages & Global"
             }
         }
     },
     "it": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Mostra/Nascondi analisi nel pannello Regolazioni"
+                "aiTitle": "Selezioni IA",
+                "basicTitle": "Strumenti di base",
+                "rangeTitle": "Intervalli e Globale"
             }
         }
     },
     "ja": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "調整パネルでアナリティクスを切り替える"
+                "aiTitle": "AI選択",
+                "basicTitle": "基本ツール",
+                "rangeTitle": "範囲とグローバル"
             }
         }
     },
     "ko": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "조정 패널에서 분석 토글"
+                "aiTitle": "AI 선택",
+                "basicTitle": "기본 도구",
+                "rangeTitle": "범위 및 글로벌"
             }
         }
     },
     "pl": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Przełącz analizę w panelu Dopasowania"
+                "aiTitle": "Zaznaczenia AI",
+                "basicTitle": "Podstawowe narzędzia",
+                "rangeTitle": "Zakresy i globalne"
             }
         }
     },
     "pt": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Alternar análise no painel de Ajustes"
+                "aiTitle": "Seleções de IA",
+                "basicTitle": "Ferramentas Básicas",
+                "rangeTitle": "Intervalos e Global"
             }
         }
     },
     "ru": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "Переключить аналитику на панели «Коррекция»"
+                "aiTitle": "Выделения ИИ",
+                "basicTitle": "Базовые инструменты",
+                "rangeTitle": "Диапазоны и глобальные"
             }
         }
     },
     "zh-CN": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "在调整面板中切换分析"
+                "aiTitle": "AI 选择",
+                "basicTitle": "基本工具",
+                "rangeTitle": "范围与全局"
             }
         }
     },
     "zh-TW": {
         "editor": {
             "masks": {
-                "toggleAnalyticsInAdjustments": "在調整面板中切換分析"
+                "aiTitle": "AI 選擇",
+                "basicTitle": "基本工具",
+                "rangeTitle": "範圍與全域"
             }
         }
     }
@@ -126,7 +152,16 @@ def update_json_file(file_path: Path, trans: dict):
         print(f"Error parsing JSON in {file_path.name}. Skipping.")
         return
 
+    # 1. Merge new translations
     deep_merge(data, trans)
+
+    # 2. Clean up removed keys from the diff
+    if "editor" in data and "masks" in data["editor"]:
+        data["editor"]["masks"].pop("createNewTitle", None)
+        if "tooltips" in data["editor"]["masks"]:
+            data["editor"]["masks"]["tooltips"].pop("showMore", None)
+
+    # 3. Sort alphabetically
     sorted_data = sort_dict_recursively(data)
 
     with open(file_path, "w", encoding="utf-8") as f:
@@ -140,7 +175,7 @@ def main():
         print(f"Error: Locales directory '{LOCALES_DIR}' does not exist.")
         return
 
-    print("Starting Analytics translation updates...")
+    print("Starting translation updates for Mask Panel sections...")
     for lang, trans in TRANSLATIONS.items():
         file_path = LOCALES_DIR / f"{lang}.json"
         update_json_file(file_path, trans)
