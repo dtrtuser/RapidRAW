@@ -178,6 +178,7 @@
     },
     "editor": {
       "autoAdjust": "自动调整图像",
+      "autoLensCorrection": "自动镜头校正",
       "cancel": "取消",
       "colorLabel": "颜色标签",
       "confirmReset": "确认重置",
@@ -240,6 +241,8 @@
       "addToAlbum": "添加到相册",
       "autoAdjust_one": "自动调整图像",
       "autoAdjust_other": "自动调整图像",
+      "autoLensCorrection_one": "自动镜头校正",
+      "autoLensCorrection_other": "自动镜头校正",
       "collage_one": "装裱图像",
       "collage_other": "创建拼贴画",
       "confirmDelete": "确认删除",
@@ -537,6 +540,16 @@
       "exporting": "正在导出…",
       "savesTo": "外部编辑 — 保存至"
     },
+    "guided": {
+      "cancel": "取消",
+      "drawingActive": "绘图中",
+      "hint": "沿着照片中应该是垂直或水平的边缘绘制。",
+      "linesStatus": "活跃引导线",
+      "toast": {
+        "angleRejected": "线条角度偏离水平或垂直太远",
+        "maxLines": "最多允许 2 条垂直线和 2 条水平线"
+      }
+    },
     "layout": {
       "split": "拆分"
     },
@@ -771,6 +784,12 @@
       "mb": "MB",
       "tb": "TB"
     },
+    "destination": {
+      "customFolder": "自定义文件夹",
+      "originalFolder": "原始图像文件夹",
+      "subfolder": "子文件夹",
+      "subfolderPlaceholder": "例如：final, WebP"
+    },
     "dialog": {
       "saveEditedImageTitle": "保存编辑后的图像",
       "selectFolderTitle": "选择文件夹以导出 {{count}} 张图像",
@@ -804,6 +823,7 @@
     },
     "sections": {
       "advanced": "高级",
+      "destination": "目标位置",
       "fileNaming": "文件命名",
       "fileSettings": "文件设置",
       "imageSizing": "图像大小",
@@ -1159,6 +1179,7 @@
         "curves": "曲线",
         "exposureToneMapper": "曝光与色调映射",
         "grain": "颗粒",
+        "guidedPerspective": "引导透视",
         "halationGlow": "光晕与发光",
         "hueShift": "全局色相偏移",
         "lensCorrection": "镜头校正",
@@ -1406,7 +1427,10 @@
       "cancel": "取消",
       "compareTooltip": "按住以对比",
       "distortion": "畸变",
+      "geometry": "几何",
+      "guided": "引导透视",
       "horizontal": "水平",
+      "manual": "手动变换",
       "maskWarning": "变换会更新基础几何形状。现有蒙版可能会偏移，AI 蒙版需要重新生成。",
       "offset": "偏移",
       "original": "原始",
@@ -1453,6 +1477,9 @@
       "speed": "速度",
       "title": "鼠标控制",
       "zoom": "缩放速度倍率",
+      "zoomClick": "缩放照片至 100%",
+      "zoomClickDesc": "点击时将编辑器中的照片缩放至 100%",
+      "zoomClickInfo": "点击照片可立即缩放至 100%（1:1 像素），以评估清晰度和噪点。禁用时，点击会逐步放大。",
       "zoomDesc": "调整使用滚轮或捏合手势时画布缩放的速度。"
     },
     "data": {

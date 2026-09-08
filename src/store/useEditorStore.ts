@@ -58,6 +58,7 @@ interface EditorState {
   overlayRotation: number;
   isStraightenActive: boolean;
   isWbPickerActive: boolean;
+  isGuidedPerspectiveActive: boolean;
   liveRotation: number | null;
   brushSettings: BrushSettings | null;
 
@@ -121,6 +122,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   overlayRotation: 0,
   isStraightenActive: false,
   isWbPickerActive: false,
+  isGuidedPerspectiveActive: false,
   liveRotation: null,
 
   copiedSectionAdjustments: null,

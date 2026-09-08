@@ -2490,6 +2490,19 @@ export default function SettingsPanel({
                           fillOrigin="min"
                         />
                       </SettingItem>
+                      <SettingItem
+                        label={t('settings.controls.zoomClick')}
+                        description={t('settings.controls.zoomClickInfo')}
+                      >
+                        <Switch
+                          checked={appSettings?.zoomPhotoToPixelClick ?? false}
+                          id="zoom-photo-to-pixel-click"
+                          label={t('settings.controls.zoomClickDesc')}
+                          onChange={(checked) => {
+                            onSettingsChange({ ...appSettings, zoomPhotoToPixelClick: checked });
+                          }}
+                        />
+                      </SettingItem>
                     </div>
                   </div>
 

@@ -14,7 +14,7 @@ import {
   Stamp,
   Bandage,
   Spline,
-  BrushCleaning,
+  MopSparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -122,7 +122,7 @@ export const MASK_ICON_MAP: Record<Mask, any> = {
   [Mask.Clone]: Stamp,
   [Mask.Heal]: Bandage,
   [Mask.Liquify]: Spline,
-  [Mask.Retouch]: BrushCleaning,
+  [Mask.Retouch]: MopSparkles,
 };
 
 export const MASK_AI_TYPES: Array<MaskType> = [
@@ -171,7 +171,7 @@ export const AI_TOUCH_UP_TYPES: Array<MaskType> = [
   },
   {
     disabled: false,
-    icon: BrushCleaning,
+    icon: MopSparkles,
     name: 'Retouch',
     type: Mask.Retouch,
   },

@@ -178,6 +178,7 @@
     },
     "editor": {
       "autoAdjust": "Ajustament automàtic",
+      "autoLensCorrection": "Correcció d'objectiu automàtica",
       "cancel": "Cancel·lar",
       "colorLabel": "Etiqueta de color",
       "confirmReset": "Confirmar restabliment",
@@ -240,6 +241,8 @@
       "addToAlbum": "Afegir a l'àlbum",
       "autoAdjust_one": "Ajustament automàtic de la imatge",
       "autoAdjust_other": "Ajustament automàtic de les imatges",
+      "autoLensCorrection_one": "Correcció d'objectiu automàtica",
+      "autoLensCorrection_other": "Correcció d'objectiu automàtica",
       "collage_one": "Emmarcar imatge",
       "collage_other": "Crear collage",
       "confirmDelete": "Confirmar eliminació",
@@ -539,6 +542,16 @@
       "exporting": "S'està exportant…",
       "savesTo": "Edició externa — es desa a"
     },
+    "guided": {
+      "cancel": "Cancel·lar",
+      "drawingActive": "Dibuix actiu",
+      "hint": "Dibuixa al llarg de les vores de la foto que haurien de ser verticals o horitzontals.",
+      "linesStatus": "Línies guia actives",
+      "toast": {
+        "angleRejected": "L'angle de la línia està massa lluny de l'horitzontal o vertical",
+        "maxLines": "Es permeten com a màxim 2 línies verticals i 2 horitzontals"
+      }
+    },
     "layout": {
       "split": "Dividir"
     },
@@ -773,6 +786,12 @@
       "mb": "MB",
       "tb": "TB"
     },
+    "destination": {
+      "customFolder": "Carpeta personalitzada",
+      "originalFolder": "Carpeta de la imatge original",
+      "subfolder": "Subcarpeta",
+      "subfolderPlaceholder": "p. ex. final, WebP"
+    },
     "dialog": {
       "saveEditedImageTitle": "Desar imatge editada",
       "selectFolderTitle": "Seleccioneu la carpeta per exportar {{count}} imatge/s",
@@ -806,6 +825,7 @@
     },
     "sections": {
       "advanced": "Avançat",
+      "destination": "Destinació",
       "fileNaming": "Nomenclatura de fitxers",
       "fileSettings": "Configuració del fitxer",
       "imageSizing": "Mida de la imatge",
@@ -1161,6 +1181,7 @@
         "curves": "Corbes",
         "exposureToneMapper": "Exposició i Mapejador de tons",
         "grain": "Gra",
+        "guidedPerspective": "Perspectiva guiada",
         "halationGlow": "Halació i Resplendor",
         "hueShift": "Canvi de to global",
         "lensCorrection": "Correcció de l'objectiu",
@@ -1408,7 +1429,10 @@
       "cancel": "Cancel·lar",
       "compareTooltip": "Mantingueu premut per comparar",
       "distortion": "Distorsió",
+      "geometry": "Geometria",
+      "guided": "Perspectiva guiada",
       "horizontal": "Horitzontal",
+      "manual": "Transformació manual",
       "maskWarning": "La transformació actualitza la geometria base. Les màscares existents es poden moure i les màscares d'IA s'han de tornar a generar.",
       "offset": "Desplaçament",
       "original": "Original",
@@ -1455,6 +1479,9 @@
       "speed": "Velocitat",
       "title": "Controls del ratolí",
       "zoom": "Multiplicador de velocitat del zoom",
+      "zoomClick": "Amplia la foto al 100%",
+      "zoomClickDesc": "Amplia la foto a l'editor al 100% en fer clic",
+      "zoomClickInfo": "Fes clic a la foto per ampliar-la directament al 100% (píxels 1:1) per avaluar-ne la nitidesa i el soroll. Quan està desactivat, en fer clic s'amplia gradualment.",
       "zoomDesc": "Ajusteu la velocitat a la qual s'apropa o s'allunya el llenç en utilitzar la roda de desplaçament o el gest de pessigar."
     },
     "data": {

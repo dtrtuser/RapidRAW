@@ -178,6 +178,7 @@
     },
     "editor": {
       "autoAdjust": "Ajuste Automático",
+      "autoLensCorrection": "Correção automática de lente",
       "cancel": "Cancelar",
       "colorLabel": "Rótulo de Cor",
       "confirmReset": "Confirmar Redefinição",
@@ -245,6 +246,8 @@
       "autoAdjust_many": "Ajustar Imagens Automaticamente",
       "autoAdjust_one": "Ajustar Imagem Automaticamente",
       "autoAdjust_other": "Ajustar Imagens Automaticamente",
+      "autoLensCorrection_one": "Correção automática de lente",
+      "autoLensCorrection_other": "Correção automática de lente",
       "collage_many": "Criar Colagem",
       "collage_one": "Emoldurar Imagem",
       "collage_other": "Criar Colagem",
@@ -559,6 +562,16 @@
       "exporting": "Exportando…",
       "savesTo": "Edição externa — salva em"
     },
+    "guided": {
+      "cancel": "Cancelar",
+      "drawingActive": "Desenho ativo",
+      "hint": "Desenhe ao longo das bordas da sua foto que devem ser verticais ou horizontais.",
+      "linesStatus": "Linhas guias ativas",
+      "toast": {
+        "angleRejected": "O ângulo da linha está muito longe da horizontal ou vertical",
+        "maxLines": "São permitidas no máximo 2 linhas verticais e 2 horizontais"
+      }
+    },
     "layout": {
       "split": "Dividir"
     },
@@ -794,6 +807,12 @@
       "mb": "MB",
       "tb": "TB"
     },
+    "destination": {
+      "customFolder": "Pasta personalizada",
+      "originalFolder": "Pasta da imagem original",
+      "subfolder": "Subpasta",
+      "subfolderPlaceholder": "ex. final, WebP"
+    },
     "dialog": {
       "saveEditedImageTitle": "Salvar Imagem Editada",
       "selectFolderTitle": "Selecionar Pasta para Exportar {{count}} Imagem(ns)",
@@ -828,6 +847,7 @@
     },
     "sections": {
       "advanced": "Avançado",
+      "destination": "Destino",
       "fileNaming": "Nomeação de Arquivos",
       "fileSettings": "Configurações de Arquivo",
       "imageSizing": "Dimensionamento de Imagem",
@@ -1185,6 +1205,7 @@
         "curves": "Curvas",
         "exposureToneMapper": "Exposição e Mapeador de Tons",
         "grain": "Granulação",
+        "guidedPerspective": "Perspectiva guiada",
         "halationGlow": "Halo e Brilho",
         "hueShift": "Deslocamento de matiz global",
         "lensCorrection": "Correção de Lente",
@@ -1439,7 +1460,10 @@
       "cancel": "Cancelar",
       "compareTooltip": "Segure para Comparar",
       "distortion": "Distorção",
+      "geometry": "Geometria",
+      "guided": "Perspectiva guiada",
       "horizontal": "Horizontal",
+      "manual": "Transformação manual",
       "maskWarning": "A transformação atualiza a geometria base. Máscaras existentes podem mudar, e máscaras de IA devem ser regeneradas.",
       "offset": "Deslocamento",
       "original": "Original",
@@ -1486,6 +1510,9 @@
       "speed": "Velocidade",
       "title": "Controles do Mouse",
       "zoom": "Multiplicador de Velocidade de Zoom",
+      "zoomClick": "Zoom da foto para 100%",
+      "zoomClickDesc": "Ampliar foto no editor para 100% ao clicar",
+      "zoomClickInfo": "Clique na foto para ampliar instantaneamente para 100% (pixels 1:1) para avaliar a nitidez e o ruído. Quando desativado, clicar aproxima gradualmente.",
       "zoomDesc": "Ajuste a rapidez com que a tela aumenta e diminui o zoom ao usar a roda de rolagem ou o gesto de pinça."
     },
     "data": {

@@ -4,15 +4,18 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { Stage, Layer, Ellipse, Line, Transformer, Group, Circle, Rect, Arrow } from 'react-konva';
 import { PercentCrop, Crop } from 'react-image-crop';
 import { Stamp, Bandage, Spline, BrushCleaning } from 'lucide-react';
-import { Adjustments, AiPatch, Coord, MaskContainer } from '../../../utils/adjustments';
+import { invoke } from '@tauri-apps/api/core';
+import { Adjustments, AiPatch, Coord, MaskContainer, GuideLine, GuideOrientation } from '../../../utils/adjustments';
 import { Mask, SubMask, SubMaskMode, ToolType } from '../right/Masks';
 import { AppSettings, BrushSettings, SelectedImage } from '../../ui/AppProperties';
 import { RenderSize } from '../../../hooks/useImageRenderSize';
 import { useOsPlatform } from '../../../hooks/useOsPlatform';
 import { useTranslation } from 'react-i18next';
+import { useEditorStore } from '../../../store/useEditorStore';
 import type { OverlayMode } from '../right/CropPanel';
 import CompositionOverlays from './overlays/CompositionOverlays';
 import { calculateStraightenAngle } from '../../../utils/cropUtils';
+import { toast } from 'react-toastify';
 
 interface CursorPreview {
   visible: boolean;
@@ -96,6 +99,69 @@ interface MaskOverlayProps {
   offsetX: number;
   offsetY: number;
   stageScale: number;
+}
+
+const IDENTITY_3X3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+
+function multiply3x3(a: number[], b: number[]): number[] {
+  if (!a || !b) return IDENTITY_3X3;
+  const out = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      out[i * 3 + j] = a[i * 3 + 0] * b[0 * 3 + j] + a[i * 3 + 1] * b[1 * 3 + j] + a[i * 3 + 2] * b[2 * 3 + j];
+    }
+  }
+  return out;
+}
+
+function invert3x3(h: number[]): number[] {
+  if (!h) return IDENTITY_3X3;
+  const a = h[0],
+    b = h[1],
+    c = h[2],
+    d = h[3],
+    e = h[4],
+    f = h[5],
+    g = h[6],
+    hh = h[7],
+    i = h[8];
+  const A = e * i - f * hh,
+    B = f * g - d * i,
+    C = d * hh - e * g;
+  const D = c * hh - b * i,
+    E = a * i - c * g,
+    F = b * g - a * hh;
+  const G = b * f - c * e,
+    H = c * d - a * f,
+    I = a * e - b * d;
+  const det = a * A + b * B + c * C;
+  if (Math.abs(det) < 1e-15) return IDENTITY_3X3;
+  const inv = 1.0 / det;
+  return [A * inv, D * inv, G * inv, B * inv, E * inv, H * inv, C * inv, F * inv, I * inv];
+}
+
+function project3x3(h: number[], x: number, y: number): { x: number; y: number } {
+  if (!h) return { x, y };
+  const W = h[6] * x + h[7] * y + h[8];
+  if (Math.abs(W) < 1e-12) return { x, y };
+  return {
+    x: (h[0] * x + h[1] * y + h[2]) / W,
+    y: (h[3] * x + h[4] * y + h[5]) / W,
+  };
+}
+
+function orientPoint(x: number, y: number, w: number, h: number, steps: number) {
+  const s = ((steps % 4) + 4) % 4;
+  if (s === 0) return { x, y };
+  if (s === 1) return { x: h - y, y: x };
+  if (s === 2) return { x: w - x, y: h - y };
+  return { x: y, y: w - x };
+}
+
+function unorientPoint(x: number, y: number, w: number, h: number, steps: number) {
+  const s = ((steps % 4) + 4) % 4;
+  const inv = (4 - s) % 4;
+  return orientPoint(x, y, w, h, inv);
 }
 
 const getEdgeFadeStyle = (fadeDistancePx: number = 128): React.CSSProperties => ({
@@ -1331,6 +1397,13 @@ const ImageCanvas = memo(
     transformState,
     hasRenderedFirstFrame,
   }: ImageCanvasProps) => {
+    const isGuidedPerspectiveActive = useEditorStore((state) => state.isGuidedPerspectiveActive);
+    const [draftGuideLine, setDraftGuideLine] = useState<{ p1: Coord; p2: Coord } | null>(null);
+    const [localDragLines, setLocalDragLines] = useState<any[] | null>(null);
+
+    const [forwardH, setForwardH] = useState<number[]>(IDENTITY_3X3);
+    const [invH, setInvH] = useState<number[]>(IDENTITY_3X3);
+
     const [isCropViewVisible, setIsCropViewVisible] = useState(false);
     const cropImageRef = useRef<HTMLImageElement>(null);
     const [displayedMaskUrl, setDisplayedMaskUrl] = useState<string | null>(null);
@@ -1798,6 +1871,177 @@ const ImageCanvas = memo(
       }
     }, [isCropping, uncroppedAdjustedPreviewUrl]);
 
+    const uncroppedImageRenderSize = useMemo<Partial<RenderSize> | null>(() => {
+      if (!selectedImage?.width || !selectedImage?.height || !imageRenderSize?.width || !imageRenderSize?.height) {
+        return null;
+      }
+
+      const viewportWidth = imageRenderSize.width + 2 * imageRenderSize.offsetX;
+      const viewportHeight = imageRenderSize.height + 2 * imageRenderSize.offsetY;
+
+      let uncroppedEffectiveWidth = selectedImage.width;
+      let uncroppedEffectiveHeight = selectedImage.height;
+      const orientationSteps = adjustments.orientationSteps || 0;
+      if (orientationSteps === 1 || orientationSteps === 3) {
+        [uncroppedEffectiveWidth, uncroppedEffectiveHeight] = [uncroppedEffectiveHeight, uncroppedEffectiveWidth];
+      }
+
+      if (uncroppedEffectiveWidth <= 0 || uncroppedEffectiveHeight <= 0 || viewportWidth <= 0 || viewportHeight <= 0) {
+        return null;
+      }
+
+      const scale = Math.min(viewportWidth / uncroppedEffectiveWidth, viewportHeight / uncroppedEffectiveHeight);
+
+      const renderWidth = uncroppedEffectiveWidth * scale;
+      const renderHeight = uncroppedEffectiveHeight * scale;
+
+      return { width: renderWidth, height: renderHeight };
+    }, [selectedImage?.width, selectedImage?.height, imageRenderSize, adjustments.orientationSteps]);
+
+    useEffect(() => {
+      const calcMatrix = async () => {
+        if (!selectedImage?.width || !selectedImage?.height) return;
+        const Ow = selectedImage.width;
+        const Oh = selectedImage.height;
+        let guidedH = IDENTITY_3X3;
+        const lines = adjustments.guidedPerspective?.lines || [];
+        if (lines.length >= 2) {
+          try {
+            const res: any = await invoke('calculate_guided_perspective', { lines, width: Ow, height: Oh });
+            if (res?.valid && (res?.forwardH || res?.forward_h)) {
+              guidedH = res.forwardH || res.forward_h;
+            }
+          } catch (e) {
+            console.error('Matrix calculation failed', e);
+          }
+        }
+        const ref_dim = 2000.0;
+        const p_vert = ((adjustments.transformVertical ?? 0) / 100000.0) * (ref_dim / Oh);
+        const p_horiz = (-(adjustments.transformHorizontal ?? 0) / 100000.0) * (ref_dim / Ow);
+        const theta = ((adjustments.transformRotate ?? 0) * Math.PI) / 180.0;
+        const aspect = adjustments.transformAspect ?? 0;
+        const aspect_factor = aspect >= 0.0 ? 1.0 + aspect / 100.0 : 1.0 / (1.0 + Math.abs(aspect) / 100.0);
+        const scale_factor = (adjustments.transformScale ?? 100) / 100.0;
+        const off_x = ((adjustments.transformXOffset ?? 0) / 100.0) * Ow;
+        const off_y = ((adjustments.transformYOffset ?? 0) / 100.0) * Oh;
+
+        const cx = Ow / 2.0;
+        const cy = Oh / 2.0;
+        const t_center = [1, 0, cx, 0, 1, cy, 0, 0, 1];
+        const t_uncenter = [1, 0, -cx, 0, 1, -cy, 0, 0, 1];
+        const m_perspective = [1, 0, 0, 0, 1, 0, p_horiz, p_vert, 1];
+        const m_rotate = [Math.cos(theta), -Math.sin(theta), 0, Math.sin(theta), Math.cos(theta), 0, 0, 0, 1];
+        const m_scale = [scale_factor * aspect_factor, 0, 0, 0, scale_factor, 0, 0, 0, 1];
+        const m_offset = [1, 0, off_x, 0, 1, off_y, 0, 0, 1];
+
+        let f = multiply3x3(t_center, m_offset);
+        f = multiply3x3(f, m_perspective);
+        f = multiply3x3(f, m_rotate);
+        f = multiply3x3(f, m_scale);
+        f = multiply3x3(f, guidedH);
+        f = multiply3x3(f, t_uncenter);
+
+        setForwardH(f);
+        setInvH(invert3x3(f));
+      };
+      calcMatrix();
+    }, [
+      selectedImage?.width,
+      selectedImage?.height,
+      adjustments.guidedPerspective?.lines,
+      adjustments.transformVertical,
+      adjustments.transformHorizontal,
+      adjustments.transformRotate,
+      adjustments.transformAspect,
+      adjustments.transformScale,
+      adjustments.transformXOffset,
+      adjustments.transformYOffset,
+    ]);
+
+    const mapUvToScreen = useCallback(
+      (uv: Coord) => {
+        if (!uncroppedImageRenderSize?.width || !uncroppedImageRenderSize?.height) return { x: 0, y: 0 };
+        const Ow = selectedImage?.width || 1920;
+        const Oh = selectedImage?.height || 1080;
+        const orientationSteps = adjustments.orientationSteps || 0;
+        const Dw = orientationSteps % 2 !== 0 ? Oh : Ow;
+        const Dh = orientationSteps % 2 !== 0 ? Ow : Oh;
+
+        const ox = uv.x * Ow;
+        const oy = uv.y * Oh;
+        const warped = project3x3(forwardH, ox, oy);
+
+        let { x: px, y: py } = orientPoint(warped.x, warped.y, Ow, Oh, orientationSteps);
+        if (adjustments.flipHorizontal) px = Dw - px;
+        if (adjustments.flipVertical) py = Dh - py;
+
+        const sx = (px / Dw) * uncroppedImageRenderSize.width;
+        const sy = (py / Dh) * uncroppedImageRenderSize.height;
+
+        const activeRotation =
+          liveRotation !== null && liveRotation !== undefined ? liveRotation : adjustments.rotation || 0;
+        if (Math.abs(activeRotation) > 1e-4) {
+          const rad = (activeRotation * Math.PI) / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          const cx = uncroppedImageRenderSize.width / 2;
+          const cy = uncroppedImageRenderSize.height / 2;
+          const dx = sx - cx;
+          const dy = sy - cy;
+          return {
+            x: cx + dx * cos - dy * sin,
+            y: cy + dx * sin + dy * cos,
+          };
+        }
+
+        return { x: sx, y: sy };
+      },
+      [forwardH, uncroppedImageRenderSize, selectedImage, adjustments, liveRotation],
+    );
+
+    const mapScreenToUv = useCallback(
+      (stageX: number, stageY: number): Coord => {
+        if (!uncroppedImageRenderSize?.width || !uncroppedImageRenderSize?.height) return { x: 0, y: 0 };
+        const Ow = selectedImage?.width || 1920;
+        const Oh = selectedImage?.height || 1080;
+        const orientationSteps = adjustments.orientationSteps || 0;
+        const Dw = orientationSteps % 2 !== 0 ? Oh : Ow;
+        const Dh = orientationSteps % 2 !== 0 ? Ow : Oh;
+
+        const activeRotation =
+          liveRotation !== null && liveRotation !== undefined ? liveRotation : adjustments.rotation || 0;
+        let sx = stageX;
+        let sy = stageY;
+
+        if (Math.abs(activeRotation) > 1e-4) {
+          const rad = (activeRotation * Math.PI) / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          const cx = uncroppedImageRenderSize.width / 2;
+          const cy = uncroppedImageRenderSize.height / 2;
+          const dx = stageX - cx;
+          const dy = stageY - cy;
+          sx = cx + dx * cos + dy * sin;
+          sy = cy - dx * sin + dy * cos;
+        }
+
+        let px = (sx / uncroppedImageRenderSize.width) * Dw;
+        let py = (sy / uncroppedImageRenderSize.height) * Dh;
+
+        if (adjustments.flipHorizontal) px = Dw - px;
+        if (adjustments.flipVertical) py = Dh - py;
+
+        const unoriented = unorientPoint(px, py, Dw, Dh, orientationSteps);
+        const orig = project3x3(invH, unoriented.x, unoriented.y);
+
+        return {
+          x: Math.max(0, Math.min(1, orig.x / Ow)),
+          y: Math.max(0, Math.min(1, orig.y / Oh)),
+        };
+      },
+      [invH, uncroppedImageRenderSize, selectedImage, adjustments, liveRotation],
+    );
+
     const handleWbClick = useCallback(
       (e: any) => {
         const sampleUrl = selectedImage?.thumbnailUrl || finalPreviewUrl;
@@ -1904,6 +2148,18 @@ const ImageCanvas = memo(
         }
 
         if (e.evt && e.evt.cancelable) e.evt.preventDefault();
+
+        if (isGuidedPerspectiveActive && isCropping) {
+          if (e.target === e.target.getStage()) {
+            const stage = e.target.getStage();
+            const pos = stage?.getPointerPosition();
+            if (!pos || !uncroppedImageRenderSize?.width || !uncroppedImageRenderSize?.height) return;
+            const uv = mapScreenToUv(pos.x, pos.y);
+            setDraftGuideLine({ p1: uv, p2: uv });
+            isDrawing.current = true;
+          }
+          return;
+        }
 
         if (isWbPickerActive) {
           handleWbClick(e);
@@ -2101,6 +2357,9 @@ const ImageCanvas = memo(
         }
       },
       [
+        isGuidedPerspectiveActive,
+        isCropping,
+        mapScreenToUv,
         isWbPickerActive,
         handleWbClick,
         isInitialDrawing,
@@ -2134,6 +2393,16 @@ const ImageCanvas = memo(
 
     const handleMove = useCallback(
       (e: any) => {
+        if (isGuidedPerspectiveActive && isCropping && draftGuideLine && isDrawing.current) {
+          const stage = e.target.getStage();
+          const pos = stage?.getPointerPosition();
+          if (!pos || !uncroppedImageRenderSize?.width || !uncroppedImageRenderSize?.height) return;
+          const uv = mapScreenToUv(pos.x, pos.y);
+          setDraftGuideLine((prev) => (prev ? { p1: prev.p1, p2: uv } : null));
+          if (e.evt && e.evt.cancelable) e.evt.preventDefault();
+          return;
+        }
+
         if (isWbPickerActive) {
           return;
         }
@@ -2332,6 +2601,10 @@ const ImageCanvas = memo(
         }
       },
       [
+        isGuidedPerspectiveActive,
+        isCropping,
+        draftGuideLine,
+        mapScreenToUv,
         isToolActive,
         isWbPickerActive,
         isInitialDrawing,
@@ -2367,6 +2640,60 @@ const ImageCanvas = memo(
       }
 
       setIsMaskInteractionActive(false);
+
+      if (isGuidedPerspectiveActive && isCropping && draftGuideLine) {
+        isDrawing.current = false;
+        const { p1, p2 } = draftGuideLine;
+        setDraftGuideLine(null);
+
+        const sc1 = mapUvToScreen(p1);
+        const sc2 = mapUvToScreen(p2);
+        const dx = sc2.x - sc1.x;
+        const dy = sc2.y - sc1.y;
+
+        if (Math.hypot(dx, dy) >= 15) {
+          const tan35 = Math.tan((35 * Math.PI) / 180);
+          const isVert = Math.abs(dx) <= Math.abs(dy) * tan35;
+          const isHoriz = Math.abs(dy) <= Math.abs(dx) * tan35;
+
+          if (!isVert && !isHoriz) {
+            toast.error(t('editor.guided.toast.angleRejected'));
+            return;
+          }
+
+          const type: GuideOrientation = isVert ? 'vertical' : 'horizontal';
+
+          setAdjustments((prev) => {
+            const existingLines = prev.guidedPerspective?.lines || [];
+
+            const existingOfSameType = existingLines.filter((l: GuideLine) => l.type === type);
+            if (existingOfSameType.length >= 2) {
+              toast.error(t('editor.guided.toast.maxLines'));
+              return prev;
+            }
+
+            const newGuide: GuideLine = {
+              id: crypto.randomUUID(),
+              type,
+              p1,
+              p2,
+            };
+
+            const newLines = [...existingLines, newGuide];
+
+            return {
+              ...prev,
+              guidedPerspective: {
+                ...prev.guidedPerspective,
+                enabled: newLines.length >= 2,
+                lines: newLines,
+                autoCrop: true,
+              },
+            };
+          });
+        }
+        return;
+      }
 
       if (isInitialDrawing && activeSubMask) {
         isDrawing.current = false;
@@ -2505,6 +2832,11 @@ const ImageCanvas = memo(
         }
       }
     }, [
+      isGuidedPerspectiveActive,
+      isCropping,
+      draftGuideLine,
+      selectedImage,
+      setAdjustments,
       isInitialDrawing,
       activeAiSubMaskId,
       activeMaskId,
@@ -2628,33 +2960,6 @@ const ImageCanvas = memo(
       }
     }, [baseIsReady, interactivePatch]);
 
-    const uncroppedImageRenderSize = useMemo<Partial<RenderSize> | null>(() => {
-      if (!selectedImage?.width || !selectedImage?.height || !imageRenderSize?.width || !imageRenderSize?.height) {
-        return null;
-      }
-
-      const viewportWidth = imageRenderSize.width + 2 * imageRenderSize.offsetX;
-      const viewportHeight = imageRenderSize.height + 2 * imageRenderSize.offsetY;
-
-      let uncroppedEffectiveWidth = selectedImage.width;
-      let uncroppedEffectiveHeight = selectedImage.height;
-      const orientationSteps = adjustments.orientationSteps || 0;
-      if (orientationSteps === 1 || orientationSteps === 3) {
-        [uncroppedEffectiveWidth, uncroppedEffectiveHeight] = [uncroppedEffectiveHeight, uncroppedEffectiveWidth];
-      }
-
-      if (uncroppedEffectiveWidth <= 0 || uncroppedEffectiveHeight <= 0 || viewportWidth <= 0 || viewportHeight <= 0) {
-        return null;
-      }
-
-      const scale = Math.min(viewportWidth / uncroppedEffectiveWidth, viewportHeight / uncroppedEffectiveHeight);
-
-      const renderWidth = uncroppedEffectiveWidth * scale;
-      const renderHeight = uncroppedEffectiveHeight * scale;
-
-      return { width: renderWidth, height: renderHeight };
-    }, [selectedImage?.width, selectedImage?.height, imageRenderSize, adjustments.orientationSteps]);
-
     const cropImageTransforms = useMemo(() => {
       const rotation = liveRotation !== null && liveRotation !== undefined ? liveRotation : adjustments.rotation || 0;
       return `rotate(${rotation}deg)`;
@@ -2672,6 +2977,7 @@ const ImageCanvas = memo(
     };
 
     const effectiveCursor = useMemo(() => {
+      if (isGuidedPerspectiveActive && isCropping) return 'crosshair';
       if (isWbPickerActive) return 'crosshair';
       if (isParametricActive) return 'crosshair';
       if (isInitialDrawing) return 'crosshair';
@@ -2697,6 +3003,8 @@ const ImageCanvas = memo(
 
       return cursorStyle;
     }, [
+      isGuidedPerspectiveActive,
+      isCropping,
       isWbPickerActive,
       isInitialDrawing,
       isBrushActive,
@@ -3065,6 +3373,16 @@ const ImageCanvas = memo(
                 position: 'relative',
                 width: uncroppedImageRenderSize.width,
               }}
+              onPointerDownCapture={(e) => {
+                if (e.button !== 0) {
+                  e.stopPropagation();
+                }
+              }}
+              onMouseDownCapture={(e) => {
+                if (e.button !== 0) {
+                  e.stopPropagation();
+                }
+              }}
             >
               <ReactCrop
                 aspect={adjustments.aspectRatio ?? undefined}
@@ -3077,8 +3395,11 @@ const ImageCanvas = memo(
                   if (width <= 0 || height <= 0) {
                     return null;
                   }
-                  const showDenseGrid = isRotationActive && !isStraightenActive;
-                  const currentOverlayMode = isRotationActive || isStraightenActive ? 'none' : overlayMode || 'none';
+                  const showDenseGrid = isRotationActive && !isStraightenActive && !isGuidedPerspectiveActive;
+                  const currentOverlayMode =
+                    isRotationActive || isStraightenActive || isGuidedPerspectiveActive
+                      ? 'none'
+                      : overlayMode || 'none';
                   return (
                     <CompositionOverlays
                       width={width}
@@ -3105,23 +3426,26 @@ const ImageCanvas = memo(
                 />
               </ReactCrop>
 
-              {isStraightenActive && (
+              {(isStraightenActive ||
+                isGuidedPerspectiveActive ||
+                (adjustments.guidedPerspective?.lines && adjustments.guidedPerspective.lines.length > 0)) && (
                 <Stage
                   height={uncroppedImageRenderSize.height}
-                  onMouseDown={handleStraightenMouseDown}
-                  onTouchStart={handleStraightenMouseDown}
-                  onMouseLeave={handleStraightenMouseLeave}
-                  onMouseMove={handleStraightenMouseMove}
-                  onTouchMove={handleStraightenMouseMove}
-                  onMouseUp={handleStraightenMouseUp}
-                  onTouchEnd={handleStraightenMouseUp}
+                  onMouseDown={isStraightenActive ? handleStraightenMouseDown : handleStart}
+                  onTouchStart={isStraightenActive ? handleStraightenMouseDown : handleStart}
+                  onMouseLeave={isStraightenActive ? handleStraightenMouseLeave : handleMouseLeave}
+                  onMouseMove={isStraightenActive ? handleStraightenMouseMove : handleMove}
+                  onTouchMove={isStraightenActive ? handleStraightenMouseMove : handleMove}
+                  onMouseUp={isStraightenActive ? handleStraightenMouseUp : handleUp}
+                  onTouchEnd={isStraightenActive ? handleStraightenMouseUp : handleUp}
                   style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     zIndex: 10,
-                    cursor: 'crosshair',
+                    cursor: isGuidedPerspectiveActive || isStraightenActive ? 'crosshair' : 'default',
                     touchAction: 'none',
+                    pointerEvents: isStraightenActive || isGuidedPerspectiveActive ? 'auto' : 'none',
                   }}
                   width={uncroppedImageRenderSize.width}
                 >
@@ -3138,6 +3462,113 @@ const ImageCanvas = memo(
                         ]}
                         stroke="#0ea5e9"
                         strokeWidth={2}
+                      />
+                    )}
+
+                    {(localDragLines || adjustments.guidedPerspective?.lines || []).map((line: any) => {
+                      const sc1 = mapUvToScreen(line.p1);
+                      const sc2 = mapUvToScreen(line.p2);
+                      return (
+                        <Group key={line.id}>
+                          <Line
+                            points={[sc1.x, sc1.y, sc2.x, sc2.y]}
+                            stroke="#3b82f6"
+                            strokeWidth={2}
+                            hitStrokeWidth={12}
+                            dash={[6, 4]}
+                            opacity={isGuidedPerspectiveActive ? 1 : 0.75}
+                          />
+                          {isGuidedPerspectiveActive && (
+                            <>
+                              <Circle
+                                x={sc1.x}
+                                y={sc1.y}
+                                radius={6}
+                                fill="#ffffff"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                draggable
+                                onMouseDown={(e) => {
+                                  e.cancelBubble = true;
+                                }}
+                                onTouchStart={(e) => {
+                                  e.cancelBubble = true;
+                                }}
+                                onDragMove={(e) => {
+                                  const newUv = mapScreenToUv(e.target.x(), e.target.y());
+                                  const baseLines = localDragLines || adjustments.guidedPerspective!.lines;
+                                  setLocalDragLines(
+                                    baseLines.map((l: any) => (l.id === line.id ? { ...l, p1: newUv } : l)),
+                                  );
+                                }}
+                                onDragEnd={() => {
+                                  if (localDragLines) {
+                                    setAdjustments((prev) => ({
+                                      ...prev,
+                                      guidedPerspective: {
+                                        ...prev.guidedPerspective,
+                                        lines: localDragLines,
+                                        enabled: localDragLines.length >= 2,
+                                        autoCrop: true,
+                                      },
+                                    }));
+                                    setLocalDragLines(null);
+                                  }
+                                }}
+                              />
+                              <Circle
+                                x={sc2.x}
+                                y={sc2.y}
+                                radius={6}
+                                fill="#ffffff"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                draggable
+                                onMouseDown={(e) => {
+                                  e.cancelBubble = true;
+                                }}
+                                onTouchStart={(e) => {
+                                  e.cancelBubble = true;
+                                }}
+                                onDragMove={(e) => {
+                                  const newUv = mapScreenToUv(e.target.x(), e.target.y());
+                                  const baseLines = localDragLines || adjustments.guidedPerspective!.lines;
+                                  setLocalDragLines(
+                                    baseLines.map((l: any) => (l.id === line.id ? { ...l, p2: newUv } : l)),
+                                  );
+                                }}
+                                onDragEnd={() => {
+                                  if (localDragLines) {
+                                    setAdjustments((prev) => ({
+                                      ...prev,
+                                      guidedPerspective: {
+                                        ...prev.guidedPerspective,
+                                        lines: localDragLines,
+                                        enabled: localDragLines.length >= 2,
+                                        autoCrop: true,
+                                      },
+                                    }));
+                                    setLocalDragLines(null);
+                                  }
+                                }}
+                              />
+                            </>
+                          )}
+                        </Group>
+                      );
+                    })}
+
+                    {draftGuideLine && (
+                      <Line
+                        points={[
+                          mapUvToScreen(draftGuideLine.p1).x,
+                          mapUvToScreen(draftGuideLine.p1).y,
+                          mapUvToScreen(draftGuideLine.p2).x,
+                          mapUvToScreen(draftGuideLine.p2).y,
+                        ]}
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dash={[4, 4]}
                       />
                     )}
                   </Layer>

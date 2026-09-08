@@ -178,6 +178,7 @@
     },
     "editor": {
       "autoAdjust": "自動調整影像",
+      "autoLensCorrection": "自動鏡頭校正",
       "cancel": "取消",
       "colorLabel": "顏色標籤",
       "confirmReset": "確認重置",
@@ -240,6 +241,8 @@
       "addToAlbum": "新增到相簿",
       "autoAdjust_one": "自動調整影像",
       "autoAdjust_other": "自動調整影像",
+      "autoLensCorrection_one": "自動鏡頭校正",
+      "autoLensCorrection_other": "自動鏡頭校正",
       "collage_one": "裝裱影像",
       "collage_other": "建立拼貼畫",
       "confirmDelete": "確認刪除",
@@ -537,6 +540,16 @@
       "exporting": "正在匯出…",
       "savesTo": "外部編輯 — 儲存至"
     },
+    "guided": {
+      "cancel": "取消",
+      "drawingActive": "繪圖中",
+      "hint": "沿著照片中應該是垂直或水平的邊緣繪製。",
+      "linesStatus": "活躍引導線",
+      "toast": {
+        "angleRejected": "線條角度偏離水平或垂直太遠",
+        "maxLines": "最多允許 2 條垂直線和 2 條水平線"
+      }
+    },
     "layout": {
       "split": "拆分"
     },
@@ -771,6 +784,12 @@
       "mb": "MB",
       "tb": "TB"
     },
+    "destination": {
+      "customFolder": "自訂資料夾",
+      "originalFolder": "原始影像資料夾",
+      "subfolder": "子資料夾",
+      "subfolderPlaceholder": "例如：final, WebP"
+    },
     "dialog": {
       "saveEditedImageTitle": "儲存編輯後的影像",
       "selectFolderTitle": "選擇資料夾以匯出 {{count}} 張影像",
@@ -804,6 +823,7 @@
     },
     "sections": {
       "advanced": "高階",
+      "destination": "目標位置",
       "fileNaming": "檔案命名",
       "fileSettings": "檔案設定",
       "imageSizing": "影像大小",
@@ -1159,6 +1179,7 @@
         "curves": "曲線",
         "exposureToneMapper": "曝光與色調映射",
         "grain": "顆粒",
+        "guidedPerspective": "引導透視",
         "halationGlow": "光暈與發光",
         "hueShift": "全域色相偏移",
         "lensCorrection": "鏡頭校正",
@@ -1406,7 +1427,10 @@
       "cancel": "取消",
       "compareTooltip": "按住以對比",
       "distortion": "畸變",
+      "geometry": "幾何",
+      "guided": "引導透視",
       "horizontal": "水平",
+      "manual": "手動變換",
       "maskWarning": "變換會更新基礎幾何形狀。現有遮色片可能會偏移，AI 遮色片需要重新生成。",
       "offset": "偏移",
       "original": "原始",
@@ -1453,6 +1477,9 @@
       "speed": "速度",
       "title": "滑鼠控制",
       "zoom": "縮放速度倍率",
+      "zoomClick": "縮放照片至 100%",
+      "zoomClickDesc": "點擊時將編輯器中的照片縮放至 100%",
+      "zoomClickInfo": "點擊照片可立即縮放至 100%（1:1 像素），以評估清晰度和雜訊。停用時，點擊會逐步放大。",
       "zoomDesc": "調整使用滾輪或捏合手勢時畫布縮放的速度。"
     },
     "data": {

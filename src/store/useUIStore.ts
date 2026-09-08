@@ -18,6 +18,11 @@ interface CollapsibleSectionsState {
   effects: boolean;
 }
 
+export interface CropSectionsState {
+  transform: boolean;
+  lens: boolean;
+}
+
 interface ConfirmModalState {
   confirmText?: string;
   confirmVariant?: string;
@@ -235,6 +240,7 @@ interface UIState {
   renderedPanel: Panel | null;
   slideDirection: number;
   collapsibleSectionsState: CollapsibleSectionsState;
+  cropSectionsState: CropSectionsState;
 
   isCreateFolderModalOpen: boolean;
   isRenameFolderModalOpen: boolean;
@@ -315,6 +321,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   renderedPanel: Panel.Adjustments,
   slideDirection: 1,
   collapsibleSectionsState: { basic: true, color: false, curves: true, details: false, effects: false },
+  cropSectionsState: { transform: false, lens: false },
 
   isCreateFolderModalOpen: false,
   isRenameFolderModalOpen: false,

@@ -5,119 +5,171 @@ LOCALES_DIR = Path("./locales")
 
 TRANSLATIONS = {
     "ca": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Seleccions d'IA",
-                "basicTitle": "Eines bàsiques",
-                "rangeTitle": "Rangs i global"
+        "export": {
+            "sections": {
+                "destination": "Destinació"
+            },
+            "destination": {
+                "customFolder": "Carpeta personalitzada",
+                "originalFolder": "Carpeta de la imatge original",
+                "subfolder": "Subcarpeta",
+                "subfolderPlaceholder": "p. ex. final, WebP"
             }
         }
     },
     "de": {
-        "editor": {
-            "masks": {
-                "aiTitle": "KI-Auswahl",
-                "basicTitle": "Basis-Werkzeuge",
-                "rangeTitle": "Bereiche & Global"
+        "export": {
+            "sections": {
+                "destination": "Zielort"
+            },
+            "destination": {
+                "customFolder": "Benutzerdefinierter Ordner",
+                "originalFolder": "Ursprungsordner des Bildes",
+                "subfolder": "Unterordner",
+                "subfolderPlaceholder": "z. B. final, WebP"
             }
         }
     },
     "en": {
-        "editor": {
-            "masks": {
-                "aiTitle": "AI Selections",
-                "basicTitle": "Basic Tools",
-                "rangeTitle": "Ranges & Global"
+        "export": {
+            "sections": {
+                "destination": "Destination"
+            },
+            "destination": {
+                "customFolder": "Custom folder",
+                "originalFolder": "Original image folder",
+                "subfolder": "Subfolder",
+                "subfolderPlaceholder": "e.g. final, WebP"
             }
         }
     },
     "es": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Selecciones de IA",
-                "basicTitle": "Herramientas básicas",
-                "rangeTitle": "Rangos y global"
+        "export": {
+            "sections": {
+                "destination": "Destino"
+            },
+            "destination": {
+                "customFolder": "Carpeta personalizada",
+                "originalFolder": "Carpeta de la imagen original",
+                "subfolder": "Subcarpeta",
+                "subfolderPlaceholder": "p. ej. final, WebP"
             }
         }
     },
     "fr": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Sélections IA",
-                "basicTitle": "Outils de base",
-                "rangeTitle": "Plages & Global"
+        "export": {
+            "sections": {
+                "destination": "Destination"
+            },
+            "destination": {
+                "customFolder": "Dossier personnalisé",
+                "originalFolder": "Dossier de l'image d'origine",
+                "subfolder": "Sous-dossier",
+                "subfolderPlaceholder": "ex. final, WebP"
             }
         }
     },
     "it": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Selezioni IA",
-                "basicTitle": "Strumenti di base",
-                "rangeTitle": "Intervalli e Globale"
+        "export": {
+            "sections": {
+                "destination": "Destinazione"
+            },
+            "destination": {
+                "customFolder": "Cartella personalizzata",
+                "originalFolder": "Cartella dell'immagine originale",
+                "subfolder": "Sottocartella",
+                "subfolderPlaceholder": "es. final, WebP"
             }
         }
     },
     "ja": {
-        "editor": {
-            "masks": {
-                "aiTitle": "AI選択",
-                "basicTitle": "基本ツール",
-                "rangeTitle": "範囲とグローバル"
+        "export": {
+            "sections": {
+                "destination": "保存先"
+            },
+            "destination": {
+                "customFolder": "カスタムフォルダー",
+                "originalFolder": "元の画像フォルダー",
+                "subfolder": "サブフォルダー",
+                "subfolderPlaceholder": "例：final, WebP"
             }
         }
     },
     "ko": {
-        "editor": {
-            "masks": {
-                "aiTitle": "AI 선택",
-                "basicTitle": "기본 도구",
-                "rangeTitle": "범위 및 글로벌"
+        "export": {
+            "sections": {
+                "destination": "대상"
+            },
+            "destination": {
+                "customFolder": "사용자 지정 폴더",
+                "originalFolder": "원본 이미지 폴더",
+                "subfolder": "하위 폴더",
+                "subfolderPlaceholder": "예: final, WebP"
             }
         }
     },
     "pl": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Zaznaczenia AI",
-                "basicTitle": "Podstawowe narzędzia",
-                "rangeTitle": "Zakresy i globalne"
+        "export": {
+            "sections": {
+                "destination": "Miejsce docelowe"
+            },
+            "destination": {
+                "customFolder": "Folder niestandardowy",
+                "originalFolder": "Folder oryginalnego obrazu",
+                "subfolder": "Podfolder",
+                "subfolderPlaceholder": "np. final, WebP"
             }
         }
     },
     "pt": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Seleções de IA",
-                "basicTitle": "Ferramentas Básicas",
-                "rangeTitle": "Intervalos e Global"
+        "export": {
+            "sections": {
+                "destination": "Destino"
+            },
+            "destination": {
+                "customFolder": "Pasta personalizada",
+                "originalFolder": "Pasta da imagem original",
+                "subfolder": "Subpasta",
+                "subfolderPlaceholder": "ex. final, WebP"
             }
         }
     },
     "ru": {
-        "editor": {
-            "masks": {
-                "aiTitle": "Выделения ИИ",
-                "basicTitle": "Базовые инструменты",
-                "rangeTitle": "Диапазоны и глобальные"
+        "export": {
+            "sections": {
+                "destination": "Место назначения"
+            },
+            "destination": {
+                "customFolder": "Пользовательская папка",
+                "originalFolder": "Папка исходного изображения",
+                "subfolder": "Вложенная папка",
+                "subfolderPlaceholder": "напр. final, WebP"
             }
         }
     },
     "zh-CN": {
-        "editor": {
-            "masks": {
-                "aiTitle": "AI 选择",
-                "basicTitle": "基本工具",
-                "rangeTitle": "范围与全局"
+        "export": {
+            "sections": {
+                "destination": "目标位置"
+            },
+            "destination": {
+                "customFolder": "自定义文件夹",
+                "originalFolder": "原始图像文件夹",
+                "subfolder": "子文件夹",
+                "subfolderPlaceholder": "例如：final, WebP"
             }
         }
     },
     "zh-TW": {
-        "editor": {
-            "masks": {
-                "aiTitle": "AI 選擇",
-                "basicTitle": "基本工具",
-                "rangeTitle": "範圍與全域"
+        "export": {
+            "sections": {
+                "destination": "目標位置"
+            },
+            "destination": {
+                "customFolder": "自訂資料夾",
+                "originalFolder": "原始影像資料夾",
+                "subfolder": "子資料夾",
+                "subfolderPlaceholder": "例如：final, WebP"
             }
         }
     }
@@ -155,13 +207,7 @@ def update_json_file(file_path: Path, trans: dict):
     # 1. Merge new translations
     deep_merge(data, trans)
 
-    # 2. Clean up removed keys from the diff
-    if "editor" in data and "masks" in data["editor"]:
-        data["editor"]["masks"].pop("createNewTitle", None)
-        if "tooltips" in data["editor"]["masks"]:
-            data["editor"]["masks"]["tooltips"].pop("showMore", None)
-
-    # 3. Sort alphabetically
+    # 2. Sort alphabetically to maintain formatting consistency
     sorted_data = sort_dict_recursively(data)
 
     with open(file_path, "w", encoding="utf-8") as f:
@@ -175,7 +221,7 @@ def main():
         print(f"Error: Locales directory '{LOCALES_DIR}' does not exist.")
         return
 
-    print("Starting translation updates for Mask Panel sections...")
+    print("Starting translation updates for export destination settings...")
     for lang, trans in TRANSLATIONS.items():
         file_path = LOCALES_DIR / f"{lang}.json"
         update_json_file(file_path, trans)

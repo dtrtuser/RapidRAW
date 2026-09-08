@@ -178,6 +178,7 @@
     },
     "editor": {
       "autoAdjust": "画像を自動補正",
+      "autoLensCorrection": "自動レンズ補正",
       "cancel": "キャンセル",
       "colorLabel": "カラーラベル",
       "confirmReset": "リセットを確認",
@@ -240,6 +241,8 @@
       "addToAlbum": "アルバムに追加",
       "autoAdjust_one": "画像を自動補正",
       "autoAdjust_other": "画像を自動補正",
+      "autoLensCorrection_one": "自動レンズ補正",
+      "autoLensCorrection_other": "自動レンズ補正",
       "collage_one": "画像にフレームを追加",
       "collage_other": "コラージュを作成",
       "confirmDelete": "削除を確認",
@@ -537,6 +540,16 @@
       "exporting": "書き出し中…",
       "savesTo": "外部編集 — 保存先"
     },
+    "guided": {
+      "cancel": "キャンセル",
+      "drawingActive": "描画中",
+      "hint": "垂直または水平であるべき写真の縁に沿って描画します。",
+      "linesStatus": "アクティブなガイドライン",
+      "toast": {
+        "angleRejected": "線の角度が水平または垂直から離れすぎています",
+        "maxLines": "垂直線と水平線はそれぞれ最大2本まで許可されています"
+      }
+    },
     "layout": {
       "split": "分割"
     },
@@ -771,6 +784,12 @@
       "mb": "MB",
       "tb": "TB"
     },
+    "destination": {
+      "customFolder": "カスタムフォルダー",
+      "originalFolder": "元の画像フォルダー",
+      "subfolder": "サブフォルダー",
+      "subfolderPlaceholder": "例：final, WebP"
+    },
     "dialog": {
       "saveEditedImageTitle": "編集した画像を保存",
       "selectFolderTitle": "{{count}} 枚の画像を書き出すフォルダを選択",
@@ -804,6 +823,7 @@
     },
     "sections": {
       "advanced": "詳細設定",
+      "destination": "保存先",
       "fileNaming": "ファイル名の命名",
       "fileSettings": "ファイル設定",
       "imageSizing": "画像サイズ",
@@ -1159,6 +1179,7 @@
         "curves": "トーンカーブ",
         "exposureToneMapper": "露光量とトーンマッパー",
         "grain": "粒子",
+        "guidedPerspective": "ガイド付きパースペクティブ",
         "halationGlow": "ハレーションとグロー",
         "hueShift": "グローバル色相シフト",
         "lensCorrection": "レンズ補正",
@@ -1406,7 +1427,10 @@
       "cancel": "キャンセル",
       "compareTooltip": "長押しで比較",
       "distortion": "歪み歪正",
+      "geometry": "ジオメトリ",
+      "guided": "ガイド付きパースペクティブ",
       "horizontal": "水平方向",
+      "manual": "手動変形",
       "maskWarning": "変形を適用するとベースの形状が変更されるため、既存のマスクがずれる場合があります。また、AIマスクは再生成する必要があります。",
       "offset": "オフセット",
       "original": "オリジナル",
@@ -1453,6 +1477,9 @@
       "speed": "速度",
       "title": "マウス操作設定",
       "zoom": "ズーム速度の倍率",
+      "zoomClick": "写真を100%にズーム",
+      "zoomClickDesc": "クリック時にエディターの写真を100%にズーム",
+      "zoomClickInfo": "写真をクリックするとすぐに100%（1:1 ピクセル）にズームされ、シャープネスとノイズを確認できます。無効の場合、クリックすると段階的にズームインします。",
       "zoomDesc": "スクロールホイールやピンチジェスチャを使用したときのズーム速度を調整します。"
     },
     "data": {

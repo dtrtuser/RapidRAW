@@ -64,6 +64,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
+ "tauri-plugin-wayland-nvidia-quirk",
  "tempfile",
  "tokenizers",
  "tokio",
@@ -71,7 +72,6 @@ dependencies = [
  "uuid",
  "walkdir",
  "webkit2gtk",
- "webkit2gtk-nvidia-quirk",
  "webp",
  "wgpu",
 ]
@@ -6633,6 +6633,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-plugin-wayland-nvidia-quirk"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "523f6620fd0b6e87f25f7d2cde69be388ae5d1bcaf1696877e64ce3da8fa1483"
+dependencies = [
+ "gtk",
+ "tauri",
+]
+
+[[package]]
 name = "tauri-runtime"
 version = "2.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7635,12 +7645,6 @@ dependencies = [
  "soup3",
  "webkit2gtk-sys",
 ]
-
-[[package]]
-name = "webkit2gtk-nvidia-quirk"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ba30b6aaad4fca046da97ca4052b68bda5d20cd4b790d1de3a4aa83f2dc2629"
 
 [[package]]
 name = "webkit2gtk-sys"
