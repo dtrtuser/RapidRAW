@@ -1,12 +1,18 @@
+use crate::as_shot::AsShot;
 use crate::image_processing::apply_orientation;
+use crate::white_balance::WhiteBalance;
 use anyhow::{Result, anyhow};
 use image::{DynamicImage, ImageBuffer, Rgba};
 use rawler::{
-    decoders::{Orientation, RawDecodeParams},
-    imgop::develop::{DemosaicAlgorithm, Intermediate, ProcessingStep, RawDevelop},
+    decoders::{Decoder, Orientation, RawDecodeParams},
+    imgop::{
+        develop::{DemosaicAlgorithm, Intermediate, ProcessingStep, RawDevelop},
+        xyz::Illuminant,
+    },
     rawimage::{RawImage, RawPhotometricInterpretation},
     rawsource::RawSource,
 };
+use rayon::prelude::*;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -27,6 +33,26 @@ pub fn develop_raw_image(
         cancel_token,
     )?;
     Ok(apply_orientation(developed_image, orientation))
+}
+
+fn metadata_orientation(decoder: &dyn Decoder, source: &RawSource) -> Result<Orientation> {
+    let metadata = decoder.raw_metadata(source, &RawDecodeParams::default())?;
+    Ok(metadata
+        .exif
+        .orientation
+        .map(Orientation::from_u16)
+        .unwrap_or(Orientation::Normal))
+}
+
+pub fn extract_embedded_preview(file_bytes: &[u8]) -> Option<DynamicImage> {
+    let source = RawSource::new_from_slice(file_bytes);
+    let decoder = rawler::get_decoder(&source).ok()?;
+    let preview = decoder
+        .full_image(&source, &RawDecodeParams::default())
+        .ok()??;
+    let orientation =
+        metadata_orientation(decoder.as_ref(), &source).unwrap_or(Orientation::Normal);
+    Some(apply_orientation(preview, orientation))
 }
 
 fn is_linear_raw_format(raw_image: &RawImage) -> bool {
@@ -75,7 +101,8 @@ fn recover_clipped_pixel(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
     if magenta > 0.0 {
         let target_g = cur_r.min(cur_b) * 0.80 + ((cur_r + cur_b) * 0.5) * 0.20;
         let correction = (target_g - cur_g).max(0.0);
-        cur_g += correction * outer_blend;
+        let magenta_weight = smoothstep(0.0, 0.25, magenta / max_c);
+        cur_g += correction * outer_blend * magenta_weight;
     }
 
     let residual = (cur_r.min(cur_b) - cur_g).max(0.0);
@@ -130,12 +157,7 @@ fn develop_internal(
     check_cancel()?;
     let mut raw_image: RawImage = decoder.raw_image(&source, &RawDecodeParams::default(), false)?;
 
-    let metadata = decoder.raw_metadata(&source, &RawDecodeParams::default())?;
-    let orientation = metadata
-        .exif
-        .orientation
-        .map(Orientation::from_u16)
-        .unwrap_or(Orientation::Normal);
+    let orientation = metadata_orientation(decoder.as_ref(), &source)?;
 
     let is_linear_format = is_linear_raw_format(&raw_image);
 
@@ -206,7 +228,7 @@ fn develop_internal(
 
     match &mut developed_intermediate {
         Intermediate::Monochrome(pixels) => {
-            pixels.data.iter_mut().for_each(|p| {
+            pixels.data.par_iter_mut().for_each(|p| {
                 let mut linear_val = *p * rescale_factor;
                 if is_linear_format && apply_ungamma {
                     linear_val = srgb_to_linear(linear_val.max(0.0));
@@ -215,7 +237,7 @@ fn develop_internal(
             });
         }
         Intermediate::ThreeColor(pixels) => {
-            pixels.data.iter_mut().for_each(|p| {
+            pixels.data.par_iter_mut().for_each(|p| {
                 let mut r = (p[0] * rescale_factor).max(0.0);
                 let mut g = (p[1] * rescale_factor).max(0.0);
                 let mut b = (p[2] * rescale_factor).max(0.0);
@@ -234,7 +256,7 @@ fn develop_internal(
             });
         }
         Intermediate::FourColor(pixels) => {
-            pixels.data.iter_mut().for_each(|p| {
+            pixels.data.par_iter_mut().for_each(|p| {
                 p.iter_mut().for_each(|c| {
                     let mut linear_val = *c * rescale_factor;
                     if is_linear_format && apply_ungamma {
@@ -250,18 +272,10 @@ fn develop_internal(
 
     let dynamic_image = match developed_intermediate {
         Intermediate::ThreeColor(pixels) => {
-            let buffer = ImageBuffer::<Rgba<f32>, _>::from_fn(width, height, |x, y| {
-                let p = pixels.data[(y * width + x) as usize];
-                Rgba([p[0], p[1], p[2], 1.0])
-            });
-            DynamicImage::ImageRgba32F(buffer)
+            DynamicImage::ImageRgba32F(rgb_pixels_to_rgba(&pixels.data, width, height)?)
         }
         Intermediate::Monochrome(pixels) => {
-            let buffer = ImageBuffer::<Rgba<f32>, _>::from_fn(width, height, |x, y| {
-                let p = pixels.data[(y * width + x) as usize];
-                Rgba([p, p, p, 1.0])
-            });
-            DynamicImage::ImageRgba32F(buffer)
+            DynamicImage::ImageRgba32F(mono_pixels_to_rgba(&pixels.data, width, height)?)
         }
         _ => {
             return Err(anyhow!("Unsupported intermediate format for conversion"));
@@ -269,6 +283,72 @@ fn develop_internal(
     };
 
     Ok((dynamic_image, orientation))
+}
+
+pub fn read_as_shot(file_bytes: &[u8]) -> Option<AsShot> {
+    let source = RawSource::new_from_slice(file_bytes);
+    let decoder = rawler::get_decoder(&source).ok()?;
+    let raw_image = decoder
+        .raw_image(&source, &RawDecodeParams::default(), true)
+        .ok()?;
+    let is_monochrome = raw_image.cpp == 1
+        && !matches!(raw_image.photometric, RawPhotometricInterpretation::Cfa(_));
+
+    Some(AsShot {
+        white_balance: (!is_monochrome)
+            .then(|| as_shot_white_balance(&raw_image, file_bytes))
+            .flatten()
+            .unwrap_or_else(WhiteBalance::reference),
+        exposure: crate::baseline_exposure::read(decoder.as_ref(), file_bytes, is_monochrome),
+    })
+}
+
+fn as_shot_white_balance(raw_image: &RawImage, file_bytes: &[u8]) -> Option<WhiteBalance> {
+    let wb_coeffs =
+        crate::multi_exposure::neutralize_wb_if_multiexposure(raw_image.wb_coeffs, file_bytes);
+    let neutral = if wb_coeffs[0].is_nan() {
+        [1.0; 4]
+    } else {
+        wb_coeffs.map(|c| 1.0 / c)
+    };
+
+    let matrices = &raw_image.color_matrix;
+    if let (Some(matrix_a), Some(matrix_d65)) =
+        (matrices.get(&Illuminant::A), matrices.get(&Illuminant::D65))
+    {
+        return WhiteBalance::from_dual_illuminant_camera_neutral(matrix_a, matrix_d65, &neutral);
+    }
+
+    let color_matrix = matrices
+        .get(&Illuminant::D65)
+        .or_else(|| matrices.values().next())?;
+    WhiteBalance::from_camera_neutral(color_matrix, &neutral)
+}
+
+fn rgb_pixels_to_rgba(
+    data: &[[f32; 3]],
+    width: u32,
+    height: u32,
+) -> Result<ImageBuffer<Rgba<f32>, Vec<f32>>> {
+    let mut rgba = vec![0.0f32; data.len() * 4];
+    rgba.par_chunks_exact_mut(4)
+        .zip(data.par_iter())
+        .for_each(|(dst, p)| dst.copy_from_slice(&[p[0], p[1], p[2], 1.0]));
+    ImageBuffer::from_raw(width, height, rgba)
+        .ok_or_else(|| anyhow!("Developed image size does not match its dimensions"))
+}
+
+fn mono_pixels_to_rgba(
+    data: &[f32],
+    width: u32,
+    height: u32,
+) -> Result<ImageBuffer<Rgba<f32>, Vec<f32>>> {
+    let mut rgba = vec![0.0f32; data.len() * 4];
+    rgba.par_chunks_exact_mut(4)
+        .zip(data.par_iter())
+        .for_each(|(dst, &p)| dst.copy_from_slice(&[p, p, p, 1.0]));
+    ImageBuffer::from_raw(width, height, rgba)
+        .ok_or_else(|| anyhow!("Developed image size does not match its dimensions"))
 }
 
 pub fn get_fast_demosaic_scale_factor(

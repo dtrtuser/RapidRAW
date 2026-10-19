@@ -22,8 +22,12 @@ pub struct FilterCriteria {
     pub raw_status: String,
     #[serde(default)]
     pub edited_status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flag_status: Option<String>,
     #[serde(default)]
     pub colors: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rating_operator: Option<String>,
 }
 
 impl Default for FilterCriteria {
@@ -32,7 +36,9 @@ impl Default for FilterCriteria {
             rating: 0,
             raw_status: "all".to_string(),
             edited_status: Some("all".to_string()),
+            flag_status: None,
             colors: Vec::new(),
+            rating_operator: None,
         }
     }
 }
@@ -101,6 +107,7 @@ pub fn all_available_adjustments() -> HashSet<String> {
         "toneMapper",
         "temperature",
         "tint",
+        "whiteBalance",
         "saturation",
         "vibrance",
         "hsl",
@@ -113,6 +120,8 @@ pub fn all_available_adjustments() -> HashSet<String> {
         "sharpness",
         "sharpnessThreshold",
         "centré",
+        "centréX",
+        "centréY",
         "lumaNoiseReduction",
         "colorNoiseReduction",
         "chromaticAberrationRedCyan",
@@ -121,6 +130,8 @@ pub fn all_available_adjustments() -> HashSet<String> {
         "vignetteFeather",
         "vignetteMidpoint",
         "vignetteRoundness",
+        "vignetteCenterX",
+        "vignetteCenterY",
         "grainAmount",
         "grainRoughness",
         "grainSize",
@@ -273,6 +284,10 @@ pub struct ExportPreset {
     pub destination_type: Option<String>,
     #[serde(default)]
     pub subfolder: Option<String>,
+    #[serde(default)]
+    pub tiff_bit_depth: Option<u8>,
+    #[serde(default)]
+    pub preserve_timestamps: Option<bool>,
 }
 
 pub fn default_export_presets() -> Vec<ExportPreset> {
@@ -309,6 +324,8 @@ pub fn default_export_presets() -> Vec<ExportPreset> {
             last_export_path: None,
             destination_type: Some("customFolder".to_string()),
             subfolder: Some("".to_string()),
+            tiff_bit_depth: Some(16),
+            preserve_timestamps: Some(false),
         },
         ExportPreset {
             id: "default-fast".to_string(),
@@ -342,6 +359,8 @@ pub fn default_export_presets() -> Vec<ExportPreset> {
             last_export_path: None,
             destination_type: Some("customFolder".to_string()),
             subfolder: Some("".to_string()),
+            tiff_bit_depth: Some(16),
+            preserve_timestamps: Some(false),
         },
     ]
 }
@@ -424,6 +443,14 @@ impl Default for WorkspaceState {
 
 pub fn default_linear_raw_mode() -> String {
     "auto".to_string()
+}
+
+pub fn default_baseline_exposure() -> f32 {
+    0.7
+}
+
+pub fn default_compensate_highlight_preservation() -> bool {
+    true
 }
 
 pub fn default_tagging_shortcuts_option() -> Option<Vec<String>> {
@@ -528,6 +555,8 @@ pub struct AppSettings {
     pub editor_neutral_grey_bg: Option<bool>,
     #[serde(default)]
     pub canvas_input_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub white_balance_mode: Option<String>,
     #[serde(default)]
     pub zoom_speed_multiplier: Option<f32>,
     #[serde(default)]
@@ -538,6 +567,12 @@ pub struct AppSettings {
     pub thumbnail_worker_threads: Option<u32>,
     #[serde(default)]
     pub image_cache_size: Option<u32>,
+    #[serde(default)]
+    pub enable_baseline_exposure: bool,
+    #[serde(default = "default_baseline_exposure")]
+    pub baseline_exposure: f32,
+    #[serde(default = "default_compensate_highlight_preservation")]
+    pub compensate_highlight_preservation: bool,
     #[serde(default)]
     pub tonemapper_override_enabled: Option<bool>,
     #[serde(default)]
@@ -650,6 +685,7 @@ impl Default for AppSettings {
             use_wgpu_renderer: Some(true),
             editor_neutral_grey_bg: Some(false),
             canvas_input_mode: Some("mouse".to_string()),
+            white_balance_mode: None,
             zoom_speed_multiplier: Some(1.0),
             zoom_photo_to_pixel_click: Some(false),
             keybinds: HashMap::new(),
@@ -661,6 +697,9 @@ impl Default for AppSettings {
             image_cache_size: Some(2),
             #[cfg(not(target_os = "android"))]
             image_cache_size: Some(5),
+            enable_baseline_exposure: false,
+            baseline_exposure: default_baseline_exposure(),
+            compensate_highlight_preservation: default_compensate_highlight_preservation(),
             tonemapper_override_enabled: Some(false),
             default_raw_tonemapper: Some("agx".to_string()),
             default_non_raw_tonemapper: Some("basic".to_string()),
